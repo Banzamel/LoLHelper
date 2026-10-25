@@ -7,6 +7,26 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Added
+- **Runes, summoner spells and skill order** in the Build view: a full rune page (keystone, primary and
+  secondary runes, stat shards) chosen by champion class, role and enemy threats; summoner spells by role;
+  ability max order with a level 1–18 table.
+- **Export runes and spells to the client**: the rune page is saved and selected (reusing the LoL Helper
+  page, or overwriting the current page after confirmation when no slot is free); summoner spells are set
+  during champion select (Flash on D or F, configurable).
+- **Live match view** (Live Client Data API): real positions, enemy levels, KDA, CS and items; the build adapts
+  to what enemies actually bought, owned items stay in the build and the next item to buy is shown with the
+  gold still missing. Opens automatically when the game starts.
+- **App self-update** from GitHub Releases: checks on start, shows a banner, downloads on request and installs
+  on restart; manual check in Settings → About.
+- Database: rune trees, stat shards and summoner spells (with icons, both languages); ability level tips.
+
+### Fixed
+- Closing the champion picker with the Close button or Escape now always finishes the pick.
+
+### Changed
+- Releases use the matching CHANGELOG section as release notes and ship `latest.yml` for updates.
+
 ## [0.1.0] - 2026-10-25
 
 First public release.

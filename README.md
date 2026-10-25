@@ -17,6 +17,7 @@ Get the installer from **[Releases](https://github.com/Banzamel/LoLHelper/releas
 to the game (`<drive>:\Riot Games\LoL Helper`) when a Riot Games folder exists.
 
 The app is not code-signed, so Windows SmartScreen may warn on first launch — choose *More info → Run anyway*.
+From version 0.2.0 the app **updates itself** from GitHub Releases (banner under the title bar).
 
 ## Features
 
@@ -36,6 +37,16 @@ The app is not code-signed, so Windows SmartScreen may warn on first launch — 
   full six-slot build — each with reasons (anti-heal vs. healers, armor/MR vs. the enemy damage split,
   stasis vs. assassins, penetration vs. tanks, tenacity/cleanse vs. heavy CC…).
 - **Export to game**: saves the build as an item set in the client, so it shows up in the in-game shop.
+
+### Runes, spells and skill order
+- Full rune page (keystone, primary/secondary runes, stat shards) by champion class, role and enemy threats,
+  summoner spells by role and an ability max order with a level 1–18 table.
+- **Export runes** (saved and selected in the client) and **set summoner spells** during champion select.
+
+### Live match
+- While the game runs, the app reads the Live Client Data API: real positions, enemy levels, KDA, CS and items.
+- The build adapts to what the enemies actually bought, keeps the items you own and shows the **next item to buy**
+  and how much gold you still need.
 
 ### Database
 - **Champions**: stats by level (1–18), passive and Q/W/E/R with cooldowns, costs and ranges, profile
@@ -57,13 +68,17 @@ npm test             # engine tests (node:test)
 npm run dist         # build the installer -> dist/LoLHelper-Setup-<version>.exe
 ```
 
+Development switches: `LOLHELPER_LIVE=1` polls the Live Client Data API without waiting for the client's
+game phase (useful with a mock server on `https://127.0.0.1:2999`).
+
 ### Project layout
 | Path | Contents |
 |---|---|
 | `src/main/main.js` | Electron main process: window, `app://` protocol, IPC |
-| `src/main/lcu/` | League client connection: credentials, REST + WebSocket, champion select, item sets |
+| `src/main/lcu/` | League client connection: credentials, REST + WebSocket, champion select, item sets, rune pages and spells, Live Client Data API |
+| `src/main/app-updater.js` | Self-update from GitHub Releases (electron-updater) |
 | `src/main/data/` | Database builder (Data Dragon + Meraki), text parsing, data store |
-| `src/main/engine/` | Counter scoring, item builds, role inference, curated `knowledge.js` |
+| `src/main/engine/` | Counter scoring, item builds, runes/spells/skills (`loadout.js`), in-game adjustments (`live.js`), role inference, curated `knowledge.js` |
 | `src/renderer/` | UI (vanilla JS modules + CSS), `lang/*.json` translations |
 | `scripts/` | Data download, icon generation, versioning, installer hooks |
 | `test/` | Engine tests |
@@ -84,7 +99,8 @@ npm run dist         # build the installer -> dist/LoLHelper-Setup-<version>.exe
 2. Run `npm run release:patch` (or `release:minor` / `release:major`) — bumps the version, moves the
    changelog entries into a dated section, commits and creates the `v<version>` tag.
 3. `git push --follow-tags` — GitHub Actions checks that the tag, `package.json` and the changelog agree,
-   builds the installer and publishes a GitHub Release with the `.exe` attached.
+   builds the installer and publishes a GitHub Release with the `.exe`, its `.blockmap` and `latest.yml`
+   (used by the in-app updater); the release notes are the version's CHANGELOG section.
 
 ## Legal
 
