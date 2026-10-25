@@ -312,5 +312,20 @@
   "appUpdate.downloading": "Downloading update… {pct}%",
   "appUpdate.downloaded": "Version {version} downloaded — it installs on restart.",
   "appUpdate.latest": "You have the latest version ({version}).",
-  "appUpdate.error": "Update error: {error}"
+  "appUpdate.error": "Update error: {error}",
+  "overlay.title": "In-game widget",
+  "overlay.borderless": "The widget shows over the game only in Borderless or Windowed mode. In Fullscreen the game covers every other window — change it in LoL: Settings → Video → Window Mode.",
+  "overlay.enabled": "Show the widget during a match",
+  "overlay.opacity": "Opacity",
+  "overlay.toggleKey": "Shortcut: show / hide",
+  "overlay.moveKey": "Shortcut: move mode",
+  "overlay.keyHint": "Electron format, e.g. CommandOrControl+Shift+H.",
+  "overlay.previewStart": "Preview and position",
+  "overlay.previewStop": "End preview",
+  "overlay.previewHint": "In preview, drag the widget with the mouse where you want it — the position is remembered.",
+  "overlay.shortcutFailed": "Could not register shortcut: {keys} (in use or invalid).",
+  "overlay.preview": "Preview — data appears during a match.",
+  "overlay.moveHint": "Drag the widget · {key} — lock",
+  "overlay.nextSkill": "Lvl {level}:",
+  "overlay.canAfford": "You can afford it — buy!"
 }

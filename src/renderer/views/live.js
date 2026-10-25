@@ -5,21 +5,9 @@ import { t } from '../js/i18n.js';
 import { state, champ, item, subscribe } from '../js/store.js';
 import { el, champIcon, itemIcon, roleIcon } from '../js/ui.js';
 import { loadoutPanels } from './loadout.js';
+import { bought, buildForGame } from '../js/game.js';
 
 const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-const bought = (ids) => ids.filter((id) => item(id) && !['consumable', 'trinket'].includes(item(id).category));
-
-function myRole(game) {
-  if (game.me.position) return game.me.position;
-  const c = champ(game.me.championId);
-  return c ? c.positions[0] : 'MIDDLE';
-}
-
-function laneOpponent(game, role) {
-  const byPos = game.enemies.find((e) => e.position === role);
-  if (byPos) return byPos;
-  return game.enemies.find((e) => champ(e.championId) && champ(e.championId).positions.includes(role)) || null;
-}
 
 function playerRow(p, { highlight = false } = {}) {
   const s = p.scores || {};
@@ -49,17 +37,8 @@ async function draw(container, game) {
       el('div', { class: 'panel empty-state' }, el('p', {}, t('live.noGame')), el('p', { class: 'muted small' }, t('live.noGameHint'))));
     return;
   }
-  const role = myRole(game);
-  const opp = laneOpponent(game, role);
-  const enemyItems = Object.fromEntries(game.enemies.map((e) => [e.championId, bought(e.items)]));
-  const owned = bought(game.me.items);
-  const build = await window.api.build({
-    championId: game.me.championId, enemyId: opp ? opp.championId : null, enemyIds: game.enemies.map((e) => e.championId),
-    role, enemyItems, ownedItems: owned,
-  });
+  const { role, opp, owned, build, fullIds } = await buildForGame(game);
   const ownedSet = new Set(owned);
-  const ownedBoots = owned.find((id) => item(id).tags.includes('Boots') && item(id).category !== 'component');
-  const fullIds = [ownedBoots || (build.boots && build.boots.id), ...build.full].filter(Boolean);
   const me = champ(game.me.championId);
 
   container.replaceChildren(

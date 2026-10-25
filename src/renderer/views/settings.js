@@ -16,6 +16,38 @@ function row(label, control, hint) {
   return el('label', { class: 'setting' }, el('div', {}, el('div', {}, label), hint ? el('div', { class: 'muted small' }, hint) : null), control);
 }
 
+// In-game overlay widget: on/off, opacity, hotkeys and a preview to position it before a match.
+function overlaySection() {
+  const o = state.settings.overlay;
+  const saveOverlay = async (patch) => {
+    await save({ overlay: { ...state.settings.overlay, ...patch } });
+    const failed = await window.api.overlayApply();
+    if (failed.length) toast(t('overlay.shortcutFailed', { keys: failed.join(', ') }), { error: true });
+  };
+  const enabled = el('input', { type: 'checkbox', class: 'toggle', checked: o.enabled ? true : null, onChange: (e) => saveOverlay({ enabled: e.target.checked }) });
+  const opacityLabel = el('span', { class: 'gold-text' }, `${Math.round(o.opacity * 100)}%`);
+  const opacity = el('input', {
+    type: 'range', min: 40, max: 100, value: Math.round(o.opacity * 100), class: 'level-slider opacity-slider',
+    onInput: (e) => { opacityLabel.textContent = `${e.target.value}%`; },
+    onChange: (e) => saveOverlay({ opacity: Number(e.target.value) / 100 }),
+  });
+  const key = (name) => el('input', { class: 'input hotkey', value: o[name], onChange: (e) => saveOverlay({ [name]: e.target.value.trim() }) });
+  let previewOn = false;
+  const previewBtn = el('button', { class: 'btn', onClick: async () => {
+    previewOn = !previewOn;
+    await window.api.overlayPreview(previewOn);
+    previewBtn.textContent = t(previewOn ? 'overlay.previewStop' : 'overlay.previewStart');
+  } }, t('overlay.previewStart'));
+  return el('section', { class: 'panel' }, el('h2', {}, t('overlay.title')),
+    el('p', { class: 'muted small' }, t('overlay.borderless')),
+    row(t('overlay.enabled'), enabled),
+    row(t('overlay.opacity'), el('div', { class: 'opacity-row' }, opacity, opacityLabel)),
+    row(t('overlay.toggleKey'), key('toggleKey'), t('overlay.keyHint')),
+    row(t('overlay.moveKey'), key('moveKey')),
+    el('div', { class: 'row-actions' }, previewBtn),
+    el('p', { class: 'muted small' }, t('overlay.previewHint')));
+}
+
 function poolSection() {
   const box = el('div', { class: 'pool' });
   const draw = () => box.replaceChildren(...ROLES.map((r) => {
@@ -84,6 +116,7 @@ export function renderSettings(root) {
           row(t('settings.autoOpenDraft'), toggle('autoOpenDraft')),
           row(t('settings.autoOpenLive'), toggle('autoOpenLive')),
           row(t('settings.flashOnD'), toggle('flashOnD'), t('settings.flashOnDHint'))),
+        overlaySection(),
         databaseSection(),
         el('section', { class: 'panel' }, el('h2', {}, t('settings.about')),
           el('p', {}, `${t('app.name')} — ${t('settings.version', { version: state.version })}`),

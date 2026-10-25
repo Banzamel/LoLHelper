@@ -312,5 +312,20 @@
   "appUpdate.downloading": "Pobieranie aktualizacji… {pct}%",
   "appUpdate.downloaded": "Wersja {version} pobrana — zainstaluje się po ponownym uruchomieniu.",
   "appUpdate.latest": "Masz najnowszą wersję ({version}).",
-  "appUpdate.error": "Błąd aktualizacji: {error}"
+  "appUpdate.error": "Błąd aktualizacji: {error}",
+  "overlay.title": "Widżet w grze",
+  "overlay.borderless": "Widżet wyświetla się nad grą tylko w trybie okna „Bez ramek” (Borderless) lub „W oknie”. W trybie pełnoekranowym gra zasłania wszystkie inne okna — zmień to w LoL: Ustawienia → Wideo → Tryb okna.",
+  "overlay.enabled": "Pokazuj widżet w trakcie meczu",
+  "overlay.opacity": "Przezroczystość",
+  "overlay.toggleKey": "Skrót: pokaż / ukryj",
+  "overlay.moveKey": "Skrót: tryb przesuwania",
+  "overlay.keyHint": "Format Electron, np. CommandOrControl+Shift+H.",
+  "overlay.previewStart": "Podgląd i ustawienie pozycji",
+  "overlay.previewStop": "Zakończ podgląd",
+  "overlay.previewHint": "W podglądzie przeciągnij widżet myszą w wybrane miejsce — pozycja zostanie zapamiętana.",
+  "overlay.shortcutFailed": "Nie udało się zarejestrować skrótu: {keys} (zajęty lub błędny).",
+  "overlay.preview": "Podgląd — dane pojawią się w trakcie meczu.",
+  "overlay.moveHint": "Przeciągnij widżet · {key} — zablokuj",
+  "overlay.nextSkill": "Poz. {level}:",
+  "overlay.canAfford": "Stać Cię — kup!"
 }
