@@ -1,0 +1,155 @@
+// Draft view: both teams (live from champion select or set manually), the lane opponent
+// and counter-pick recommendations for the player's role.
+import { t } from '../js/i18n.js';
+import { state, champ, subscribe } from '../js/store.js';
+import { el, champIcon, roleIcon, ROLES, scoreRing, reasonChip, pickChampion } from '../js/ui.js';
+import { navigate } from '../js/app.js';
+
+let lastQuery = '';
+let lastResults = [];
+
+function liveModel(d) {
+  const me = d.myTeam.find((m) => m.isMe);
+  return {
+    live: true,
+    allies: d.myTeam.map((m) => ({ ...m, championId: m.championId || m.hoverId, hovering: !m.championId && !!m.hoverId, role: m.role || d.allyRoles[m.cellId] })),
+    enemies: d.theirTeam.map((m) => ({ ...m, role: d.enemyRoles[m.cellId] || null, inferred: true })),
+    bans: d.bans,
+    myRole: (me && me.role) || state.manual.myRole,
+    roleFixed: !!(me && me.role),
+  };
+}
+
+async function manualModel() {
+  const m = state.manual;
+  const picks = m.theirTeam.map((id, i) => ({ cellId: i, championId: id, role: null }));
+  const roles = picks.some((p) => p.championId) ? await window.api.inferRoles(picks) : {};
+  return {
+    live: false,
+    allies: m.myTeam.map((id, i) => ({ cellId: i, championId: id, role: ROLES[i], isMe: ROLES[i] === m.myRole })),
+    enemies: m.theirTeam.map((id, i) => ({ cellId: i, championId: id, role: roles[i] || null, inferred: true })),
+    bans: [],
+    myRole: m.myRole,
+    roleFixed: false,
+  };
+}
+
+function opponentOf(model) {
+  const override = state.manual.opponent;
+  if (override && model.enemies.some((e) => e.championId === override)) return override;
+  const e = model.enemies.find((x) => x.championId && x.role === model.myRole);
+  return e ? e.championId : null;
+}
+
+function slot(member, { enemy, opponent, onClick, onOpponent }) {
+  const c = champ(member.championId);
+  const isOpp = enemy && member.championId && member.championId === opponent;
+  const vsBtn = enemy && c && !isOpp ? el('button', {
+    class: 'btn small ghost vs-btn', title: t('draft.setOpponent'),
+    onClick: (e) => { e.stopPropagation(); onOpponent(); },
+  }, 'VS') : null;
+  return el('div', { class: `slot ${member.isMe ? 'me' : ''} ${isOpp ? 'opponent' : ''} ${member.hovering ? 'hovering' : ''} ${onClick ? 'clickable' : ''}`, onClick },
+    champIcon(member.championId, { size: '' }),
+    el('div', { class: 'slot-info' },
+      el('div', { class: 'slot-name' }, c ? c.name : t('draft.empty')),
+      el('div', { class: 'role-badge', title: member.inferred ? t('draft.roleInferred') : null }, member.role ? roleIcon(member.role) : null,
+        member.role ? t(`role.${member.role}`) : '', member.inferred && member.role ? '*' : '')),
+    member.isMe ? el('span', { class: 'chip teal' }, t('draft.you')) : null,
+    isOpp ? el('span', { class: 'chip minus' }, 'VS') : vsBtn);
+}
+
+function recCard(r, model, opponent) {
+  const c = champ(r.id);
+  const shown = r.reasons.slice(0, 4);
+  return el('div', { class: 'rec-card' },
+    champIcon(r.id, { size: 'lg', onClick: () => navigate('champion', { id: r.id }) }),
+    el('div', { class: 'rec-main' },
+      el('div', { class: 'rec-title' }, el('h3', {}, c.name), el('span', { class: `chip ${c.damageType === 'AP' ? 'ap' : 'ad'}` }, c.damageType),
+        el('span', { class: 'muted rec-sub' }, c.title)),
+      el('div', { class: 'chips' }, shown.map(reasonChip)),
+      r.reasons.length > shown.length ? el('div', { class: 'muted rec-more', title: r.reasons.slice(4).map((x) => t(x.key, x.params)).join('\n') }, `+${r.reasons.length - shown.length}…`) : null),
+    el('div', { class: 'rec-side' }, scoreRing(r.score),
+      el('button', { class: 'btn small', onClick: () => { state.buildTarget = { championId: r.id, enemyId: opponent, role: model.myRole, enemyIds: model.enemies.map((e) => e.championId).filter(Boolean) }; navigate('build'); } }, t('draft.showBuild'))));
+}
+
+async function loadRecommendations(model, opponent) {
+  const picked = [...model.allies, ...model.enemies].map((m) => m.championId).filter(Boolean);
+  const query = {
+    role: model.myRole,
+    enemyId: opponent,
+    allyIds: model.allies.filter((a) => !a.isMe && a.championId && !a.hovering).map((a) => a.championId),
+    enemyIds: model.enemies.map((e) => e.championId).filter(Boolean),
+    excludeIds: [...picked.filter((id) => !model.allies.some((a) => a.isMe && a.championId === id)), ...model.bans],
+    useClient: model.live,
+    limit: 12,
+  };
+  const key = JSON.stringify(query);
+  if (key !== lastQuery) { lastQuery = key; lastResults = await window.api.counters(query); }
+  return lastResults;
+}
+
+export function renderDraft(root) {
+  const container = el('div', { class: 'draft' });
+  root.append(container);
+  let busy = false;
+  const draw = async () => {
+    if (busy) return;
+    busy = true;
+    try { await drawInto(container); } finally { busy = false; }
+  };
+  const unsub = subscribe((what) => { if (!container.isConnected) { unsub(); return; } if (what === 'draft' || what === 'lcu') draw(); });
+  draw();
+}
+
+async function drawInto(container) {
+  const model = state.draft ? liveModel(state.draft) : await manualModel();
+  const opponent = opponentOf(model);
+  const recs = await loadRecommendations(model, opponent);
+  const redraw = () => drawInto(container);
+
+  const setAlly = async (i) => {
+    if (model.live) return;
+    const id = await pickChampion({ role: ROLES[i] });
+    if (id === null) return;
+    state.manual.myTeam[i] = id || null;
+    redraw();
+  };
+  const setOpponent = (member) => { state.manual.opponent = member.championId; redraw(); };
+  const setEnemy = async (i) => {
+    const id = await pickChampion({ exclude: state.manual.theirTeam.filter(Boolean) });
+    if (id === null) return;
+    state.manual.theirTeam[i] = id || null;
+    if (id) state.manual.opponent = null;
+    redraw();
+  };
+
+  const head = el('div', { class: 'view-head' },
+    el('h1', {}, t('draft.title')),
+    el('span', { class: `chip ${model.live ? 'teal' : ''}` }, t(model.live ? 'draft.live' : 'draft.manual')),
+    el('div', { class: 'spacer' }),
+    el('span', { class: 'muted' }, t('draft.myRole')),
+    el('div', { class: 'tabs' }, ROLES.map((r) => el('button', {
+      class: `tab ${model.myRole === r ? 'active' : ''}`, disabled: model.roleFixed && model.myRole !== r ? true : null, title: t(`role.${r}`),
+      onClick: () => { state.manual.myRole = r; state.manual.opponent = null; redraw(); },
+    }, roleIcon(r), t(`role.${r}`)))),
+    !model.live ? el('button', { class: 'btn small ghost', onClick: () => { Object.assign(state.manual, { myTeam: Array(5).fill(null), theirTeam: Array(5).fill(null), opponent: null }); redraw(); } }, t('draft.reset')) : null);
+
+  const bans = model.bans.length ? el('div', { class: 'bans' }, el('span', { class: 'muted' }, t('draft.bans')), model.bans.map((id) => champIcon(id, { size: 'xs', banned: true }))) : null;
+  const hint = !model.live ? el('p', { class: 'muted draft-hint' }, t('draft.manualHint')) : null;
+
+  const opp = champ(opponent);
+  const center = el('section', { class: 'panel gold recs' },
+    el('div', { class: 'panel-title' },
+      el('h2', {}, t(opponent ? 'draft.recommendations' : 'draft.blindPicks')), el('div', { class: 'spacer' }),
+      el('span', { class: 'muted' }, t('draft.laneOpponent')),
+      opp ? champIcon(opponent, { size: 'sm' }) : null,
+      el('strong', { class: opp ? 'opp-name' : 'muted' }, opp ? opp.name : t('draft.noOpponent'))),
+    recs.length ? el('div', { class: 'rec-list' }, recs.map((r) => recCard(r, model, opponent))) : el('p', { class: 'muted' }, t('draft.noResults')));
+
+  const allies = el('section', { class: 'panel team allies' }, el('h2', {}, t('draft.allies')),
+    model.allies.map((m, i) => slot(m, { enemy: false, onClick: model.live ? null : () => setAlly(i) })));
+  const enemies = el('section', { class: 'panel team enemies' }, el('h2', {}, t('draft.enemies')),
+    model.enemies.map((m, i) => slot(m, { enemy: true, opponent, onClick: model.live ? null : () => setEnemy(i), onOpponent: () => setOpponent(m) })));
+
+  container.replaceChildren(head, hint || '', bans || '', el('div', { class: 'draft-grid' }, allies, center, enemies));
+}
