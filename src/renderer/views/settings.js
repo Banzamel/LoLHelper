@@ -1,6 +1,7 @@
 // Settings: language, League folder, window behaviour, champion pool, database update, about.
 import { t } from '../js/i18n.js';
-import { state } from '../js/store.js';
+import { state, subscribe } from '../js/store.js';
+import { appUpdateSection } from '../js/update.js';
 import { el, champIcon, roleIcon, ROLES, pickChampion, toast } from '../js/ui.js';
 import { applyLanguage, reloadDatabase, navigate } from '../js/app.js';
 
@@ -69,6 +70,9 @@ export function renderSettings(root) {
   const dir = el('input', { class: 'input wide', value: s.leagueDir, placeholder: 'T:\\Riot Games\\League of Legends', onChange: (e) => save({ leagueDir: e.target.value.trim() }) });
   const toggle = (key) => el('input', { type: 'checkbox', class: 'toggle', checked: s[key] ? true : null, onChange: (e) => save({ [key]: e.target.checked }) });
 
+  const appUpdate = appUpdateSection();
+  const unsub = subscribe((what) => { if (!appUpdate.node.isConnected) { unsub(); return; } if (what === 'appUpdate') appUpdate.draw(); });
+
   root.append(
     el('div', { class: 'view-head' }, el('h1', {}, t('settings.title'))),
     el('div', { class: 'settings-grid' },
@@ -77,10 +81,13 @@ export function renderSettings(root) {
           row(t('settings.language'), lang),
           row(t('settings.leagueDir'), dir, t('settings.leagueDirHint')),
           row(t('settings.alwaysOnTop'), toggle('alwaysOnTop')),
-          row(t('settings.autoOpenDraft'), toggle('autoOpenDraft'))),
+          row(t('settings.autoOpenDraft'), toggle('autoOpenDraft')),
+          row(t('settings.autoOpenLive'), toggle('autoOpenLive')),
+          row(t('settings.flashOnD'), toggle('flashOnD'), t('settings.flashOnDHint'))),
         databaseSection(),
         el('section', { class: 'panel' }, el('h2', {}, t('settings.about')),
           el('p', {}, `${t('app.name')} — ${t('settings.version', { version: state.version })}`),
+          el('h3', { class: 'sub' }, t('appUpdate.title')), appUpdate.node,
           el('p', { class: 'muted small disclaimer' }, t('settings.disclaimer')))),
       el('div', { class: 'champ-col' },
         el('section', { class: 'panel' }, el('h2', {}, t('settings.pool')), el('p', { class: 'muted small' }, t('settings.poolHint')), poolSection()))));

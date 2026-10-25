@@ -8,11 +8,13 @@ import { renderChampions } from '../views/champions.js';
 import { renderChampion } from '../views/champion.js';
 import { renderItems } from '../views/items.js';
 import { renderSettings } from '../views/settings.js';
+import { renderLive } from '../views/live.js';
+import { renderUpdateBanner } from './update.js';
 
 const VIEWS = {
-  draft: renderDraft, build: renderBuild, champions: renderChampions, champion: renderChampion, items: renderItems, settings: renderSettings,
+  draft: renderDraft, build: renderBuild, champions: renderChampions, champion: renderChampion, items: renderItems, settings: renderSettings, live: renderLive,
 };
-const NAV = ['draft', 'build', 'champions', 'items', 'settings'];
+const NAV = ['draft', 'live', 'build', 'champions', 'items', 'settings'];
 let current = { name: 'draft', params: {} };
 
 export function navigate(name, params = {}) {
@@ -68,6 +70,8 @@ async function boot() {
   state.lcu = init.status;
   state.phase = init.phase;
   state.draft = init.draft;
+  state.game = init.game;
+  state.appUpdate = init.update;
   setChampionResolver((id) => (champ(id) ? champ(id).name : id));
   document.querySelectorAll('[data-win]').forEach((b) => b.addEventListener('click', () => window.api.window(b.dataset.win)));
 
@@ -78,9 +82,18 @@ async function boot() {
     if (p === 'ChampSelect' && state.settings.autoOpenDraft && current.name !== 'draft') navigate('draft');
   });
   window.api.onDraft((d) => { state.draft = d; renderStatus(); emit('draft'); });
+  window.api.onGame((g) => {
+    const started = !(state.game && state.game.me) && g && g.me;
+    state.game = g;
+    emit('game');
+    if (started && state.settings.autoOpenLive && current.name !== 'live') navigate('live');
+  });
+  window.api.onAppUpdate((u) => { state.appUpdate = u; renderUpdateBanner(); emit('appUpdate'); });
 
   await applyLanguage(state.settings.language);
-  if (state.draft && state.settings.autoOpenDraft) navigate('draft');
+  renderUpdateBanner();
+  if (state.game && state.game.me && state.settings.autoOpenLive) navigate('live');
+  else if (state.draft && state.settings.autoOpenDraft) navigate('draft');
 }
 
 // Debug handle (DevTools console / scripts/capture): inspect state or navigate.

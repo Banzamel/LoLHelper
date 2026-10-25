@@ -1,0 +1,66 @@
+/* Runes, summoner spells, skill order, live match and the app update banner */
+body { display: flex; flex-direction: column; }
+.shell { flex: 1; min-height: 0; height: auto; }
+
+.update-banner {
+  display: flex; align-items: center; justify-content: center; gap: 14px; padding: 6px 16px; font-size: 13px;
+  background: linear-gradient(90deg, rgba(10, 200, 185, 0.18), rgba(200, 170, 110, 0.12)); border-bottom: 1px solid rgba(10, 200, 185, 0.4); color: var(--gold-hi);
+}
+.update-banner[hidden] { display: none; }
+
+/* Loadout */
+.loadout { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; margin-bottom: 14px; }
+.loadout-side { display: grid; gap: 14px; align-content: start; }
+.rune-page { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; margin-bottom: 10px; }
+.rune-col { display: grid; gap: 10px; align-content: start; }
+.tree-head { display: flex; align-items: center; gap: 8px; color: var(--gold); text-transform: uppercase; font-size: 12px; letter-spacing: 0.06em; }
+.tree-head img { width: 22px; height: 22px; }
+.keystone { display: flex; align-items: center; gap: 12px; }
+.keystone strong { color: var(--gold-hi); font-size: 15px; }
+.rune-row, .shards { display: grid; gap: 8px; }
+.rune-cell { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.rune-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--bg-0); border: 1px solid var(--gold-dim); flex: none; display: grid; place-items: center; overflow: hidden; }
+.rune-icon img { width: 100%; height: 100%; }
+.rune-icon.lg { width: 56px; height: 56px; border: 2px solid var(--gold); }
+.rune-icon.sm { width: 24px; height: 24px; }
+.rune-icon.shard img { width: 70%; height: 70%; }
+
+.skill-max { display: flex; align-items: center; gap: 10px; margin: 6px 0 12px; }
+.skill-max .arrow { color: var(--gold-dim); font-size: 20px; }
+.skill-key { position: relative; width: 40px; height: 40px; border: 1px solid var(--gold-dim); }
+.skill-key img { width: 100%; height: 100%; }
+.skill-key span { position: absolute; right: -5px; bottom: -5px; width: 18px; height: 18px; display: grid; place-items: center; font-size: 10px; font-weight: 700; background: var(--bg-0); border: 1px solid var(--gold-dim); color: var(--gold-hi); }
+.skill-grid { display: grid; gap: 3px; overflow-x: auto; }
+.skill-row { display: grid; grid-template-columns: 22px repeat(18, minmax(18px, 1fr)); gap: 3px; }
+.skill-label { color: var(--gold); font-weight: 700; font-size: 12px; display: grid; place-items: center; }
+.skill-cell { height: 20px; background: var(--bg-0); border: 1px solid var(--line); font-size: 10px; display: grid; place-items: center; color: var(--bg-0); }
+.skill-cell.on { background: linear-gradient(180deg, #0a5f66, #063a40); border-color: var(--teal); color: var(--gold-hi); }
+.skill-cell.on.ult { background: linear-gradient(180deg, #785a28, #463714); border-color: var(--gold); }
+
+/* Live match */
+.empty-state { padding: 30px; text-align: center; display: grid; gap: 8px; }
+.live-gold { font-size: 18px; font-weight: 700; }
+.live-top { display: grid; grid-template-columns: 1fr 320px; gap: 14px; margin-bottom: 14px; }
+.live-me-head { display: flex; gap: 14px; align-items: center; }
+.live-me-head h2 { color: var(--gold-hi); text-transform: none; font-size: 18px; }
+.live-threats { margin-top: 10px; }
+.owned-wrap { position: relative; }
+.owned-wrap.owned::after { content: "✓"; position: absolute; right: -4px; top: -6px; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; background: var(--green); color: #fff; }
+.owned-wrap.owned .item-icon { border-color: var(--green); }
+.next-body { display: flex; gap: 14px; align-items: center; margin-top: 10px; }
+.next-body h3 { margin-bottom: 4px; }
+.next-body .chip { margin-top: 6px; }
+.live-team { margin-bottom: 14px; }
+.enemy-title { color: var(--red); margin-bottom: 10px; }
+.live-row { display: grid; grid-template-columns: 22px 32px 170px 90px 70px 1fr; gap: 10px; align-items: center; padding: 6px 8px; border: 1px solid transparent; border-radius: var(--radius); }
+.live-row.opponent { border-color: rgba(232, 64, 87, 0.55); background: linear-gradient(90deg, rgba(232, 64, 87, 0.12), transparent); }
+.live-row.dead { opacity: 0.5; }
+.live-name { display: grid; line-height: 1.2; }
+.live-name strong { color: var(--gold-hi); }
+.live-kda { color: var(--gold-hi); font-variant-numeric: tabular-nums; }
+.live-items { gap: 4px; }
+.sit-item { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border: 1px solid var(--line); border-radius: var(--radius); margin: 0 8px 8px 0; flex-wrap: wrap; }
+
+@media (max-width: 1250px) {
+  .loadout, .live-top { grid-template-columns: 1fr; }
+}

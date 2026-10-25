@@ -1,6 +1,6 @@
 // DOM helpers and shared components: icons, tooltips, modal, champion picker, toast.
 import { t } from './i18n.js';
-import { state, champ, item, asset } from './store.js';
+import { state, champ, item, rune, summoner, asset } from './store.js';
 
 export function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -11,7 +11,7 @@ export function el(tag, attrs = {}, ...children) {
     else if (k.startsWith('on')) node.addEventListener(k.slice(2).toLowerCase(), v);
     else node.setAttribute(k, v === true ? '' : v);
   }
-  for (const c of children.flat()) if (c !== null && c !== undefined && c !== false) node.append(c.nodeType ? c : document.createTextNode(c));
+  for (const c of children.flat(Infinity)) if (c !== null && c !== undefined && c !== false) node.append(c.nodeType ? c : document.createTextNode(c));
   return node;
 }
 
@@ -25,6 +25,7 @@ export function svg(paths, viewBox = '0 0 24 24') {
 
 const ICONS = {
   draft: '<path fill="none" stroke="currentColor" stroke-width="1.6" d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z"/>',
+  live: '<path fill="none" stroke="currentColor" stroke-width="1.6" d="M4 20L14 10M14 10l2-6 4 4-6 2M6 14l4 4M3 21l2-2"/><circle cx="18" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/>',
   build: '<path fill="none" stroke="currentColor" stroke-width="1.6" d="M12 3l8 4v6c0 4-3.5 7-8 8-4.5-1-8-4-8-8V7z M9 12l2 2 4-4"/>',
   champions: '<circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
   items: '<path fill="none" stroke="currentColor" stroke-width="1.6" d="M5 8h14l-1.5 12h-11zM9 8V6a3 3 0 016 0v2"/>',
@@ -105,9 +106,19 @@ export function toast(message, { error = false, ms = 3500 } = {}) {
   node._timer = setTimeout(() => { node.hidden = true; }, ms);
 }
 
-export function openModal(title, body, { actions = [] } = {}) {
+// onClose runs once however the modal is closed (button, backdrop click, Escape or code).
+export function openModal(title, body, { actions = [], onClose = () => {} } = {}) {
   const root = document.getElementById('modal-root');
-  const close = () => root.replaceChildren();
+  let open = true;
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  const close = () => {
+    if (!open) return;
+    open = false;
+    document.removeEventListener('keydown', onKey);
+    root.replaceChildren();
+    onClose();
+  };
+  document.addEventListener('keydown', onKey);
   const backdrop = el('div', { class: 'modal-backdrop', onClick: (e) => { if (e.target === backdrop) close(); } },
     el('div', { class: 'modal' },
       el('div', { class: 'modal-head' }, el('h2', {}, title), el('div', { class: 'spacer' }), ...actions,
@@ -125,7 +136,8 @@ export function pickChampion({ role = null, exclude = [], allowClear = true } = 
     const grid = el('div', { class: 'picker-grid' });
     const tabs = el('div', { class: 'tabs' });
     let close;
-    const done = (v) => { close(); resolve(v); };
+    let result = null;
+    const done = (v) => { result = v; close(); };
     const render = () => {
       tabs.replaceChildren(...[null, ...ROLES].map((r) => el('button', {
         class: `tab ${filterRole === r ? 'active' : ''}`, title: t(r ? `role.${r}` : 'role.any'),
@@ -138,9 +150,33 @@ export function pickChampion({ role = null, exclude = [], allowClear = true } = 
     };
     const search = el('input', { class: 'input search', placeholder: t('picker.search'), onInput: (e) => { query = e.target.value; render(); } });
     const actions = allowClear ? [el('button', { class: 'btn small ghost', onClick: () => done('') }, t('picker.clear'))] : [];
-    close = openModal(t('picker.title'), el('div', {}, el('div', { class: 'picker-head' }, search, tabs), grid), { actions });
-    document.querySelector('.modal-backdrop').addEventListener('click', (e) => { if (e.target.classList.contains('modal-backdrop')) resolve(null); });
+    close = openModal(t('picker.title'), el('div', {}, el('div', { class: 'picker-head' }, search, tabs), grid), { actions, onClose: () => resolve(result) });
     render();
     search.focus();
   });
+}
+
+// Resolves true when confirmed, false otherwise.
+export function confirmDialog(title, message, confirmLabel) {
+  return new Promise((resolve) => {
+    let ok = false;
+    let close;
+    const yes = el('button', { class: 'btn primary small', onClick: () => { ok = true; close(); } }, confirmLabel);
+    close = openModal(title, el('p', {}, message), { actions: [yes], onClose: () => resolve(ok) });
+  });
+}
+
+export function runeIcon(id, { size = '' } = {}) {
+  const r = rune(id);
+  const node = el('div', { class: `rune-icon ${size} ${r && r.shard ? 'shard' : ''}` }, r ? el('img', { src: asset(r.icon), alt: r.name || '' }) : null);
+  if (r && !r.shard) attachTooltip(node, () => el('div', {}, el('h4', {}, r.name), r.description ? el('div', { class: 'item-desc', html: r.description }) : null));
+  if (r && r.shard) attachTooltip(node, () => el('div', {}, t(`shard.${r.id}`)));
+  return node;
+}
+
+export function summonerIcon(id) {
+  const s = summoner(id);
+  const node = el('div', { class: 'item-icon' }, s ? el('img', { src: asset(s.icon), alt: s.name }) : null);
+  if (s) attachTooltip(node, () => el('div', {}, el('h4', {}, s.name), el('div', { class: 'tt-cost' }, `${s.cooldown}s`), el('div', {}, s.description)));
+  return node;
 }
