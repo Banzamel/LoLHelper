@@ -5,7 +5,8 @@ const { normalizeSession } = require('./champselect');
 const { inferRoles } = require('../engine/roles');
 
 class LcuWatcher {
-  constructor({ getDb, send }) {
+  constructor({ getDb, send, onPhase = () => {} }) {
+    this.onPhase = onPhase;
     this.getDb = getDb;
     this.send = send;
     this.lcu = new LcuClient();
@@ -23,7 +24,7 @@ class LcuWatcher {
   async onStatus(status) {
     this.status = status;
     this.send('lcu:status', status);
-    if (!status.connected) { this.setDraft(null); return; }
+    if (!status.connected) { this.setDraft(null); this.setPhase('None'); return; }
     try {
       const list = await this.lcu.get('/lol-champion-mastery/v1/local-player/champion-mastery');
       this.mastery = Object.fromEntries((list || []).map((m) => [m.championId, m.championPoints]));
@@ -43,6 +44,7 @@ class LcuWatcher {
   setPhase(phase) {
     this.phase = phase;
     this.send('lcu:phase', phase);
+    this.onPhase(phase);
   }
 
   async refreshSession(session) {
