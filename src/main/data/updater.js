@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { extractChampionTraits, extractItemFeatures, sanitizeHtml, plain } = require('./parse');
 const { DATA_LOCALES } = require('../i18n');
+const { SCHEMA } = require('./store');
 
 const DDRAGON = 'https://ddragon.leagueoflegends.com';
 const MERAKI = 'https://cdn.merakianalytics.com/riot/lol/resources/latest/en-US/champions.json';
@@ -71,6 +72,7 @@ function buildChampion(en, meraki) {
     passiveIcon: `img/passive/${en.passive.image.full}`,
     spells: en.spells.map((s, idx) => ({
       key: SPELL_KEYS[idx], cooldown: s.cooldownBurn, cost: s.costBurn, range: s.rangeBurn, maxrank: s.maxrank, icon: `img/spell/${s.image.full}`,
+      labels: ((s.leveltip && s.leveltip.label) || []).map((l) => l.replace(/@[^@]+@\s*/g, '').trim()),
     })),
     traits: extractChampionTraits(en),
     icon: `img/champion/${en.id}.png`,
@@ -123,6 +125,30 @@ function buildItems(enItems) {
   })).sort((a, b) => a.gold.total - b.gold.total);
 }
 
+// Rune trees (language independent part) and the stat shards, which Data Dragon does not list.
+const SHARDS = [
+  { id: 5008, icon: 'StatModsAdaptiveForceIcon' }, { id: 5005, icon: 'StatModsAttackSpeedIcon' },
+  { id: 5007, icon: 'StatModsCDRScalingIcon' }, { id: 5010, icon: 'StatModsMovementSpeedIcon' },
+  { id: 5001, icon: 'StatModsHealthScalingIcon' }, { id: 5011, icon: 'StatModsHealthPlusIcon' },
+  { id: 5013, icon: 'StatModsTenacityIcon' },
+];
+
+function buildRunes(enTrees) {
+  return {
+    trees: enTrees.map((t) => ({
+      id: t.id, key: t.key, nameEn: t.name, icon: `img/${t.icon}`,
+      slots: t.slots.map((s) => s.runes.map((r) => ({ id: r.id, key: r.key, nameEn: r.name, icon: `img/${r.icon}` }))),
+    })),
+    shards: SHARDS.map((s) => ({ id: s.id, icon: `img/perk-images/StatMods/${s.icon}.png` })),
+  };
+}
+
+function buildSummoners(enSpells) {
+  return Object.values(enSpells).filter((s) => s.modes.includes('CLASSIC')).map((s) => ({
+    id: Number(s.key), key: s.id, nameEn: s.name, cooldown: s.cooldownBurn, icon: `img/summoner/${s.image.full}`,
+  }));
+}
+
 async function buildDatabase({ outDir, onProgress = () => {} }) {
   onProgress({ key: 'update.versions', pct: 0 });
   const versions = await getJson(`${DDRAGON}/api/versions.json`);
@@ -133,8 +159,11 @@ async function buildDatabase({ outDir, onProgress = () => {} }) {
   const locales = [...new Set(['en_US', ...Object.values(DATA_LOCALES)])];
   const raw = {};
   await Promise.all(locales.map(async (loc) => {
-    const [champs, items] = await Promise.all([getJson(`${cdn}/data/${loc}/championFull.json`), getJson(`${cdn}/data/${loc}/item.json`)]);
-    raw[loc] = { champs: champs.data, items: items.data };
+    const [champs, items, runes, summoners] = await Promise.all([
+      getJson(`${cdn}/data/${loc}/championFull.json`), getJson(`${cdn}/data/${loc}/item.json`),
+      getJson(`${cdn}/data/${loc}/runesReforged.json`), getJson(`${cdn}/data/${loc}/summoner.json`),
+    ]);
+    raw[loc] = { champs: champs.data, items: items.data, runes, summoners: summoners.data };
   }));
   const meraki = await getJson(MERAKI).catch(() => ({}));
 
@@ -143,10 +172,17 @@ async function buildDatabase({ outDir, onProgress = () => {} }) {
   const ids = Object.keys(en.champs).sort();
   const champions = ids.map((id) => buildChampion(en.champs[id], meraki[id]));
   const items = buildItems(en.items);
+  const runes = buildRunes(en.runes);
+  const summoners = buildSummoners(en.summoners);
 
   fs.mkdirSync(path.join(outDir, 'texts'), { recursive: true });
   for (const [lang, loc] of Object.entries(DATA_LOCALES)) {
-    const texts = { champions: {}, items: {} };
+    const texts = { champions: {}, items: {}, runes: {}, summoners: {} };
+    for (const tree of raw[loc].runes) {
+      texts.runes[tree.id] = { name: tree.name };
+      for (const r of tree.slots.flatMap((s) => s.runes)) texts.runes[r.id] = { name: r.name, description: sanitizeHtml(r.shortDesc || '') };
+    }
+    for (const s of Object.values(raw[loc].summoners)) texts.summoners[s.key] = { name: s.name, description: plain(s.description || '') };
     for (const id of ids) texts.champions[id] = championTexts(raw[loc].champs[id] || en.champs[id]);
     for (const it of items) {
       const src = raw[loc].items[it.id] || en.items[it.id];
@@ -155,9 +191,22 @@ async function buildDatabase({ outDir, onProgress = () => {} }) {
     fs.writeFileSync(path.join(outDir, 'texts', `${lang}.json`), JSON.stringify(texts));
   }
 
-  for (const dir of ['champion', 'spell', 'passive', 'item']) fs.mkdirSync(path.join(outDir, 'img', dir), { recursive: true });
   const tasks = [];
-  const fetchImg = (rel) => tasks.push(() => downloadFile(`${cdn}/${rel}`, path.join(outDir, rel)));
+  const fetchFrom = (base, rel) => tasks.push(async () => {
+    fs.mkdirSync(path.dirname(path.join(outDir, rel)), { recursive: true });
+    await downloadFile(`${base}/${rel}`, path.join(outDir, rel));
+  });
+  const fetchImg = (rel) => fetchFrom(cdn, rel);
+  // Rune and shard icons are not versioned: they live under /cdn/img/perk-images/...
+  for (const tree of runes.trees) {
+    fetchFrom(`${DDRAGON}/cdn`, tree.icon);
+    tree.slots.flat().forEach((r) => fetchFrom(`${DDRAGON}/cdn`, r.icon));
+  }
+  runes.shards.forEach((s) => fetchFrom(`${DDRAGON}/cdn`, s.icon));
+  summoners.forEach((s) => tasks.push(async () => {
+    fs.mkdirSync(path.join(outDir, 'img', 'summoner'), { recursive: true });
+    await downloadFile(`${cdn}/img/spell/${path.basename(s.icon)}`, path.join(outDir, s.icon));
+  }));
   for (const c of champions) {
     fetchImg(c.icon);
     fetchImg(c.passiveIcon);
@@ -171,7 +220,9 @@ async function buildDatabase({ outDir, onProgress = () => {} }) {
 
   fs.writeFileSync(path.join(outDir, 'champions.json'), JSON.stringify(champions));
   fs.writeFileSync(path.join(outDir, 'items.json'), JSON.stringify(items));
-  const meta = { version, languages: Object.keys(DATA_LOCALES), builtAt: new Date().toISOString(), champions: champions.length, items: items.length, failures: failures.length };
+  fs.writeFileSync(path.join(outDir, 'runes.json'), JSON.stringify(runes));
+  fs.writeFileSync(path.join(outDir, 'summoners.json'), JSON.stringify(summoners));
+  const meta = { schema: SCHEMA, version, languages: Object.keys(DATA_LOCALES), builtAt: new Date().toISOString(), champions: champions.length, items: items.length, failures: failures.length };
   fs.writeFileSync(path.join(outDir, 'meta.json'), JSON.stringify(meta, null, 2));
   onProgress({ key: 'update.done', pct: 100 });
   return meta;
