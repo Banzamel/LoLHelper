@@ -22,10 +22,15 @@ jobs:
       - run: npm test
       - run: node scripts/version.js check
         if: startsWith(github.ref, 'refs/tags/v')
+      - run: node scripts/version.js notes release-notes.md
+        if: startsWith(github.ref, 'refs/tags/v')
       - run: npx electron-builder --win nsis --publish never
         if: startsWith(github.ref, 'refs/tags/v')
       - uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/v')
         with:
-          files: dist/LoLHelper-Setup-*.exe
-          generate_release_notes: true
+          files: |
+            dist/LoLHelper-Setup-*.exe
+            dist/LoLHelper-Setup-*.exe.blockmap
+            dist/latest.yml
+          body_path: release-notes.md

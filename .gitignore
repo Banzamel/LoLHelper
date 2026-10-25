@@ -3,3 +3,4 @@ dist/
 resources/data/
 .idea/
 build/icon.ico
+release-notes.md

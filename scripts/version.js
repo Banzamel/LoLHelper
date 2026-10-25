@@ -30,7 +30,19 @@ function check(tagArg) {
   console.log(`✔ version ${pkg.version}${tag ? ` matches tag ${tag}` : ''}`);
 }
 
+// Writes the changelog section of the current version to a file (GitHub release body).
+function notes(out) {
+  const log = fs.readFileSync(changelogPath, 'utf8');
+  const m = log.match(new RegExp(`## \\[${pkg.version.replace(/\./g, '\\.')}\\][^\\n]*\\n([\\s\\S]*?)(?=\\n## \\[|\\n\\[[^\\]]+\\]: |$)`));
+  if (!m) fail(`CHANGELOG.md has no "## [${pkg.version}]" section`);
+  const body = `${m[1].trim()}\n\n**Download:** \`LoLHelper-Setup-${pkg.version}.exe\` below. Installed copies (0.2.0+) update themselves.\n`;
+  fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+  fs.writeFileSync(out, body);
+  console.log(`release notes for ${pkg.version} -> ${out}`);
+}
+
 const [cmd, arg] = process.argv.slice(2);
 if (cmd === 'stamp') stamp();
 else if (cmd === 'check') check(arg);
-else fail('usage: node scripts/version.js stamp | check [tag]');
+else if (cmd === 'notes') notes(arg || 'release-notes.md');
+else fail('usage: node scripts/version.js stamp | check [tag] | notes [file]');
