@@ -12,6 +12,9 @@ const { recommendBuild } = require('./engine/builds');
 const { inferRoles } = require('./engine/roles');
 const { LcuWatcher } = require('./lcu/watcher');
 const { exportItemSet } = require('./lcu/itemsets');
+const { exportRunePage, exportSummonerSpells } = require('./lcu/perks');
+const { LiveClient } = require('./lcu/liveclient');
+const { setupAppUpdater } = require('./app-updater');
 
 const ROOT = path.join(__dirname, '..', '..');
 const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
@@ -24,7 +27,11 @@ let win = null;
 let db = null;
 let settings = null;
 const send = (channel, payload) => { if (win && !win.isDestroyed()) win.webContents.send(channel, payload); };
-const watcher = new LcuWatcher({ getDb: () => db, send });
+const live = new LiveClient(() => db);
+live.on('game', (game) => send('live:game', game));
+// The Live Client API only exists while a match runs, so poll it during InProgress only.
+const watcher = new LcuWatcher({ getDb: () => db, send, onPhase: (phase) => (phase === 'InProgress' ? live.start() : live.stop()) });
+let updater = null;
 
 function loadDb() {
   const dir = resolveDataDir(USER_DATA, BUNDLED_DATA);
@@ -65,10 +72,14 @@ function registerIpc() {
     languages: Object.keys(DATA_LOCALES),
     version: app.getVersion(),
     hasDatabase: !!db,
+    game: live.game,
+    update: updater.status(),
     ...watcher.snapshot(),
   }));
 
-  ipcMain.handle('db:get', (_e, lang) => (db ? { meta: db.meta, champions: db.champions, items: db.items, texts: readTexts(lang) } : null));
+  ipcMain.handle('db:get', (_e, lang) => (db ? {
+    meta: db.meta, champions: db.champions, items: db.items, runes: db.runes, summoners: db.summoners, texts: readTexts(lang),
+  } : null));
 
   ipcMain.handle('db:checkUpdate', async () => {
     const latest = await latestVersion();
@@ -103,6 +114,12 @@ function registerIpc() {
     const champ = db.byId[build.championId];
     return exportItemSet(watcher.lcu, build, champ.key, title, blockNames);
   });
+  ipcMain.handle('lcu:exportRunes', (_e, { runes, name, overwriteCurrent }) => exportRunePage(watcher.lcu, runes, name, { overwriteCurrent }));
+  ipcMain.handle('lcu:exportSpells', (_e, ids) => exportSummonerSpells(watcher.lcu, ids, { flashOnD: settings.get('flashOnD') }));
+
+  ipcMain.handle('update:check', () => updater.check());
+  ipcMain.handle('update:download', () => updater.download());
+  ipcMain.handle('update:install', () => updater.install());
 
   ipcMain.handle('settings:set', (_e, patch) => {
     const next = settings.set(patch);
@@ -133,9 +150,12 @@ app.whenReady().then(() => {
     if (url.host === 'data' && db) return serveFile(db.dir, rel);
     return new Response('Not found', { status: 404 });
   });
+  updater = setupAppUpdater(send);
   registerIpc();
   createWindow();
   watcher.start(settings.get('leagueDir'));
+  // Development: LOLHELPER_LIVE=1 polls the Live Client API without waiting for a game phase.
+  if (process.env.LOLHELPER_LIVE) live.start();
 });
 
 app.on('window-all-closed', () => app.quit());

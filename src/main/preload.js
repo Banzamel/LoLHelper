@@ -25,4 +25,11 @@ contextBridge.exposeInMainWorld('api', {
   onDraft: on('lcu:draft'),
   onGamePhase: on('lcu:phase'),
   onUpdateProgress: on('db:progress'),
+  onGame: on('live:game'),
+  onAppUpdate: on('app:update'),
+  exportRunes: invoke('lcu:exportRunes'),
+  exportSpells: invoke('lcu:exportSpells'),
+  checkAppUpdate: invoke('update:check'),
+  downloadAppUpdate: invoke('update:download'),
+  installAppUpdate: invoke('update:install'),
 });

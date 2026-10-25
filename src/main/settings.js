@@ -10,6 +10,8 @@ const DEFAULTS = {
   counterOverrides: {},
   alwaysOnTop: false,
   autoOpenDraft: true,
+  autoOpenLive: true,
+  flashOnD: true,
 };
 
 class Settings {

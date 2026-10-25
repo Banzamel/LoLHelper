@@ -37,6 +37,7 @@
     "dist": "npm run fetch-data && electron-builder --win nsis --publish never"
   },
   "dependencies": {
+    "electron-updater": "^6.8.11",
     "ws": "^8.18.0"
   },
   "devDependencies": {
@@ -76,6 +77,14 @@
       "include": "build/installer.nsh"
     },
     "artifactName": "LoLHelper-Setup-${version}.${ext}",
-    "afterPack": "scripts/after-pack.js"
+    "afterPack": "scripts/after-pack.js",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Banzamel",
+        "repo": "LoLHelper",
+        "releaseType": "release"
+      }
+    ]
   }
 }
