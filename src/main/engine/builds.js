@@ -1,6 +1,8 @@
 // Item build recommendation. Items are scored from their parsed stats against the
 // champion's class weights, then adjusted for the enemy laner and enemy team threats
 // (damage type, healing, tanks, burst, crowd control, auto-attackers, shields).
+const { recommendLoadout } = require('./loadout');
+const { applyEnemyItems, nextPurchase } = require('./live');
 
 const GOLD = { ad: 35, ap: 20, armor: 20, mr: 18, hp: 2.67, as: 25, crit: 40, haste: 26.7, lethality: 30, armorPen: 40,
   magicPen: 46, magicPenFlat: 31, lifesteal: 37.5, omnivamp: 40, mana: 1.4, manaRegen: 3, hpRegen: 3, hsp: 66, tenacity: 10, msPct: 39 };
@@ -130,15 +132,16 @@ function pickBoots(db, cls, t) {
   return boots ? { id: boots.id, upgrade: boots.into[0] || null, reason } : null;
 }
 
-function recommendBuild(db, { championId, enemyId, enemyIds = [], role }) {
+function recommendBuild(db, { championId, enemyId, enemyIds = [], role, enemyItems = null, ownedItems = null }) {
   const champ = db.byId[championId];
   if (!champ) throw new Error(`Unknown champion ${championId}`);
   const laner = enemyId ? db.byId[enemyId] : null;
   const enemies = enemyIds.map((id) => db.byId[id]).filter(Boolean);
   const cls = classOf(champ, role || champ.positions[0]);
   const w = WEIGHTS[cls];
-  const t = analyzeThreats(laner, enemies);
+  const t = applyEnemyItems(db, analyzeThreats(laner, enemies), enemyItems);
   const pool = db.items.filter((i) => i.category === 'legendary');
+  const owned = new Set((ownedItems || []).filter((id) => db.itemById[id] && db.itemById[id].category === 'legendary'));
 
   const scored = pool.map((item) => {
     const base = baseScore(item, w, champ);
@@ -146,14 +149,16 @@ function recommendBuild(db, { championId, enemyId, enemyIds = [], role }) {
     return { item, base: base.score, top: base.top, sit, sitScore: sit.reduce((s, r) => s + r.v, 0) };
   });
 
-  const core = [];
+  // Items already bought in game stay in the build (ranked first) and are never replaced.
+  const core = scored.filter((s) => owned.has(s.item.id)).slice(0, 3);
   for (const s of [...scored].sort((a, b) => (b.base + b.sitScore * 0.15) - (a.base + a.sitScore * 0.15))) {
     if (core.length >= 3) break;
-    if (!conflicts(s.item, core.map((c) => c.item))) core.push(s);
+    if (!core.includes(s) && !conflicts(s.item, core.map((c) => c.item))) core.push(s);
   }
-  // Buy order: % penetration and multiplier items pay off later, so they go last.
-  core.sort((a, b) => lateItem(a.item) - lateItem(b.item));
+  // Buy order: owned items first, then % penetration and multiplier items last.
+  core.sort((a, b) => (owned.has(b.item.id) - owned.has(a.item.id)) || (lateItem(a.item) - lateItem(b.item)));
   const taken = core.map((c) => c.item);
+  for (const s of scored) if (owned.has(s.item.id) && !taken.includes(s.item)) taken.push(s.item);
   const situ = [];
   for (const s of [...scored].filter((x) => x.sitScore > 0 && x.base > 0.6).sort((a, b) => (b.sitScore + b.base * 0.4) - (a.sitScore + a.base * 0.4))) {
     if (situ.length >= 5) break;
@@ -175,16 +180,20 @@ function recommendBuild(db, { championId, enemyId, enemyIds = [], role }) {
     if (t.burstAD + t.burstAP >= 0.25) threats.push({ key: 'threat.burst' });
     if (t.cc >= 1.6) threats.push({ key: 'threat.cc' });
     if (t.autoAttack >= 0.4) threats.push({ key: 'threat.autoAttack' });
+    if (t.live) threats.push({ key: 'threat.fromItems' });
   }
 
-  return {
+  const build = {
     championId, enemyId: enemyId || null, role: role || champ.positions[0], cls, threats,
     starters: pickStarters(db, cls, role, laner),
     boots: pickBoots(db, cls, t),
-    core: core.map((c) => ({ id: c.item.id, stats: c.top, reasons: c.sit.map((r) => ({ key: r.key })) })),
+    core: core.map((c) => ({ id: c.item.id, stats: c.top, owned: owned.has(c.item.id), reasons: c.sit.map((r) => ({ key: r.key })) })),
     situational: situ.map((s) => ({ id: s.item.id, reasons: s.sit.map((r) => ({ key: r.key })) })),
-    full: full.map((i) => i.id),
+    full: full.slice(0, 5).map((i) => i.id),
+    ...recommendLoadout(db, { champ, cls, role: role || champ.positions[0], laner, threats: t }),
   };
+  if (ownedItems) build.next = nextPurchase(db, build, ownedItems);
+  return build;
 }
 
 module.exports = { recommendBuild, classOf };
