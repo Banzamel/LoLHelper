@@ -7,7 +7,16 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Added
+- **In-game overlay widget** for single-monitor setups: a small transparent, always-on-top, click-through
+  window over the game with the next item to buy (and the gold still missing), build progress with owned
+  items ticked, the skill to level next and the lane opponent's items. Shows only during a match and never
+  takes focus from the game. Requires Borderless or Windowed mode in League (Fullscreen covers all windows).
+- Overlay hotkeys: `Ctrl+Shift+H` show/hide, `Ctrl+Shift+J` move mode (drag it anywhere; position is
+  remembered). Settings → In-game widget: on/off, opacity, custom hotkeys and a preview to place it before a match.
+
 ### Changed
+- The Match view and the widget share one in-game build helper.
 - `LICENSE` contains only the standard MIT text, so GitHub recognises the license; the note about
   Riot Games data stays in README → Legal.
 

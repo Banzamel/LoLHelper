@@ -48,6 +48,14 @@ From version 0.2.0 the app **updates itself** from GitHub Releases (banner under
 - The build adapts to what the enemies actually bought, keeps the items you own and shows the **next item to buy**
   and how much gold you still need.
 
+### In-game widget (one monitor)
+- A small transparent widget over the game: next item to buy and the gold still missing, build progress,
+  the skill to level next and your lane opponent's items. Click-through, never steals focus, shows only in a match.
+- `Ctrl+Shift+H` shows/hides it, `Ctrl+Shift+J` switches to move mode (drag it anywhere). Opacity and hotkeys
+  are configurable in *Settings → In-game widget*, with a preview to place it before a match.
+- League must run in **Borderless** or **Windowed** mode (*Settings → Video → Window Mode*) — exclusive
+  Fullscreen hides every other window, including the widget.
+
 ### Database
 - **Champions**: stats by level (1–18), passive and Q/W/E/R with cooldowns, costs and ranges, profile
   ratings, detected ability traits, playing tips and matchups (strong / weak against).
@@ -77,6 +85,7 @@ game phase (useful with a mock server on `https://127.0.0.1:2999`).
 | `src/main/main.js` | Electron main process: window, `app://` protocol, IPC |
 | `src/main/lcu/` | League client connection: credentials, REST + WebSocket, champion select, item sets, rune pages and spells, Live Client Data API |
 | `src/main/app-updater.js` | Self-update from GitHub Releases (electron-updater) |
+| `src/main/overlay.js` | In-game overlay widget window, hotkeys and visibility |
 | `src/main/data/` | Database builder (Data Dragon + Meraki), text parsing, data store |
 | `src/main/engine/` | Counter scoring, item builds, runes/spells/skills (`loadout.js`), in-game adjustments (`live.js`), role inference, curated `knowledge.js` |
 | `src/renderer/` | UI (vanilla JS modules + CSS), `lang/*.json` translations |
