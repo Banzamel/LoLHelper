@@ -32,4 +32,10 @@ contextBridge.exposeInMainWorld('api', {
   checkAppUpdate: invoke('update:check'),
   downloadAppUpdate: invoke('update:download'),
   installAppUpdate: invoke('update:install'),
+  overlayState: invoke('overlay:state'),
+  overlayPreview: invoke('overlay:preview'),
+  overlayToggleMove: invoke('overlay:toggleMove'),
+  overlayApply: invoke('overlay:apply'),
+  overlayResize: invoke('overlay:resize'),
+  onOverlayState: on('overlay:state'),
 });

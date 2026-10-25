@@ -12,13 +12,23 @@ const DEFAULTS = {
   autoOpenDraft: true,
   autoOpenLive: true,
   flashOnD: true,
+  overlay: {
+    enabled: true,
+    opacity: 0.92,
+    bounds: null,
+    toggleKey: 'CommandOrControl+Shift+H',
+    moveKey: 'CommandOrControl+Shift+J',
+  },
 };
 
 class Settings {
   constructor(dir) {
     this.file = path.join(dir, 'settings.json');
     this.data = { ...DEFAULTS };
-    try { this.data = { ...DEFAULTS, ...JSON.parse(fs.readFileSync(this.file, 'utf8')) }; } catch { /* first run */ }
+    try {
+      const saved = JSON.parse(fs.readFileSync(this.file, 'utf8'));
+      this.data = { ...DEFAULTS, ...saved, overlay: { ...DEFAULTS.overlay, ...(saved.overlay || {}) } };
+    } catch { /* first run */ }
   }
 
   get(key) { return key ? this.data[key] : this.data; }

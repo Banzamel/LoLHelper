@@ -15,6 +15,7 @@ const { exportItemSet } = require('./lcu/itemsets');
 const { exportRunePage, exportSummonerSpells } = require('./lcu/perks');
 const { LiveClient } = require('./lcu/liveclient');
 const { setupAppUpdater } = require('./app-updater');
+const { Overlay } = require('./overlay');
 
 const ROOT = path.join(__dirname, '..', '..');
 const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
@@ -28,10 +29,17 @@ let db = null;
 let settings = null;
 const send = (channel, payload) => { if (win && !win.isDestroyed()) win.webContents.send(channel, payload); };
 const live = new LiveClient(() => db);
-live.on('game', (game) => send('live:game', game));
+live.on('game', (game) => {
+  send('live:game', game);
+  if (overlay) {
+    overlay.send('live:game', game);
+    overlay.setGameActive(!!(game && game.me));
+  }
+});
 // The Live Client API only exists while a match runs, so poll it during InProgress only.
 const watcher = new LcuWatcher({ getDb: () => db, send, onPhase: (phase) => (phase === 'InProgress' ? live.start() : live.stop()) });
 let updater = null;
+let overlay = null;
 
 function loadDb() {
   const dir = resolveDataDir(USER_DATA, BUNDLED_DATA);
@@ -59,6 +67,8 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   win.once('ready-to-show', () => win.show());
+  // The overlay is a second window; closing the main window ends the app.
+  win.on('closed', () => { overlay.destroy(); app.quit(); });
   win.webContents.on('console-message', (_e, level, message, line, source) => {
     if (level >= 2) console.error(`[renderer] ${message} (${source}:${line})`);
   });
@@ -117,6 +127,12 @@ function registerIpc() {
   ipcMain.handle('lcu:exportRunes', (_e, { runes, name, overwriteCurrent }) => exportRunePage(watcher.lcu, runes, name, { overwriteCurrent }));
   ipcMain.handle('lcu:exportSpells', (_e, ids) => exportSummonerSpells(watcher.lcu, ids, { flashOnD: settings.get('flashOnD') }));
 
+  ipcMain.handle('overlay:state', () => overlay.state());
+  ipcMain.handle('overlay:preview', (_e, on) => { overlay.setPreview(on); return overlay.state(); });
+  ipcMain.handle('overlay:toggleMove', () => { overlay.toggleMove(); return overlay.state(); });
+  ipcMain.handle('overlay:apply', () => overlay.applySettings());
+  ipcMain.handle('overlay:resize', (_e, height) => overlay.resize(height));
+
   ipcMain.handle('update:check', () => updater.check());
   ipcMain.handle('update:download', () => updater.download());
   ipcMain.handle('update:install', () => updater.install());
@@ -125,6 +141,7 @@ function registerIpc() {
     const next = settings.set(patch);
     if ('alwaysOnTop' in patch && win) win.setAlwaysOnTop(!!patch.alwaysOnTop);
     if ('leagueDir' in patch) watcher.start(patch.leagueDir);
+    if ('language' in patch) overlay.reload();
     return next;
   });
 
@@ -151,6 +168,8 @@ app.whenReady().then(() => {
     return new Response('Not found', { status: 404 });
   });
   updater = setupAppUpdater(send);
+  overlay = new Overlay({ settings, send });
+  overlay.registerShortcuts();
   registerIpc();
   createWindow();
   watcher.start(settings.get('leagueDir'));
@@ -159,3 +178,4 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => app.quit());
+app.on('will-quit', () => { if (overlay) overlay.destroy(); });
