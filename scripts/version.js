@@ -16,7 +16,7 @@ function stamp() {
   if (log.includes(`## [${pkg.version}]`)) return console.log(`CHANGELOG already has ${pkg.version}`);
   const m = log.match(/## \[Unreleased\]\s*\n([\s\S]*?)(?=\n## \[|$)/);
   if (!m || !m[1].trim()) fail('CHANGELOG.md: add your changes under "## [Unreleased]" before bumping the version.');
-  const date = new Date().toISOString().slice(0, 10);
+  const date = new Date().toLocaleDateString('sv-SE'); // local YYYY-MM-DD
   let next = log.replace(m[0], `## [Unreleased]\n\n## [${pkg.version}] - ${date}\n\n${m[1].trim()}\n`);
   // Keep the comparison links at the bottom in sync.
   const repo = 'https://github.com/Banzamel/LoLHelper';
