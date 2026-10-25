@@ -1,9 +1,9 @@
 // electron-builder afterPack hook: embeds the icon and version info into the app exe.
-// Used instead of electron-builder's own exe editing ("signAndEditExecutable"), which
-// crashes with "Array buffer allocation failed" on Node 24.
+// Used instead of electron-builder's own exe editing ("signAndEditExecutable"), which needs
+// the winCodeSign bundle and fails with "Array buffer allocation failed" when memory is low.
 const fs = require('fs');
 const path = require('path');
-const { rcedit } = require('rcedit');
+const rcedit = require('rcedit');
 
 // Wraps a 256x256 PNG into a single-image .ico (PNG-compressed icons are valid since Vista).
 function pngToIco(pngPath, icoPath) {
