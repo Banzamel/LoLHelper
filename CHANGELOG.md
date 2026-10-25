@@ -7,6 +7,10 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Changed
+- `LICENSE` contains only the standard MIT text, so GitHub recognises the license; the note about
+  Riot Games data stays in README → Legal.
+
 ## [0.2.0] - 2026-10-25
 
 ### Added
