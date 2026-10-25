@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-25
+
 ### Added
 - **Runes, summoner spells and skill order** in the Build view: a full rune page (keystone, primary and
   secondary runes, stat shards) chosen by champion class, role and enemy threats; summoner spells by role;
@@ -46,5 +48,6 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Banzamel/LoLHelper/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Banzamel/LoLHelper/releases/tag/v0.1.0
