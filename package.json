@@ -1,0 +1,81 @@
+{
+  "name": "lolhelper",
+  "productName": "LoL Helper",
+  "version": "0.1.0",
+  "description": "Windows desktop assistant for League of Legends: counter-picks in champion select, item builds against your lane opponent, champion and item database.",
+  "main": "src/main/main.js",
+  "author": "Rafał Polak (Banzamel)",
+  "license": "MIT",
+  "homepage": "https://github.com/Banzamel/LoLHelper#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Banzamel/LoLHelper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Banzamel/LoLHelper/issues"
+  },
+  "keywords": [
+    "league-of-legends",
+    "lol",
+    "counter-pick",
+    "item-build",
+    "electron",
+    "lcu",
+    "champion-select"
+  ],
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "fetch-data": "node scripts/fetch-data.js",
+    "make-icon": "powershell -ExecutionPolicy Bypass -File scripts/make-icon.ps1",
+    "version:check": "node scripts/version.js check",
+    "version": "node scripts/version.js stamp && git add CHANGELOG.md",
+    "release:patch": "npm version patch -m \"Release v%s\"",
+    "release:minor": "npm version minor -m \"Release v%s\"",
+    "release:major": "npm version major -m \"Release v%s\"",
+    "dist": "npm run fetch-data && electron-builder --win nsis --publish never"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "rcedit": "^4.0.1"
+  },
+  "build": {
+    "appId": "pl.banzamel.lolhelper",
+    "productName": "LoL Helper",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!src/main/dev-capture.js"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/data",
+        "to": "data"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "LoL Helper",
+      "include": "build/installer.nsh"
+    },
+    "artifactName": "LoLHelper-Setup-${version}.${ext}",
+    "afterPack": "scripts/after-pack.js"
+  }
+}

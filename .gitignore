@@ -1,0 +1,5 @@
+node_modules/
+dist/
+resources/data/
+.idea/
+build/icon.ico
