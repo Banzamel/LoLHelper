@@ -13,6 +13,7 @@ function normalizeSession(session, db) {
     hoverId: ally ? idOf(m.championPickIntent) : null,
     role: POSITION[m.assignedPosition] || null,
     isMe: ally && m.cellId === session.localPlayerCellId,
+    spells: ally && m.cellId === session.localPlayerCellId ? [m.spell1Id, m.spell2Id] : null,
     locked: actions.some((a) => a.actorCellId === m.cellId && a.type === 'pick' && a.completed),
   });
 

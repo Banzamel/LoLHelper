@@ -4,6 +4,10 @@ import { champ, item } from './store.js';
 
 export const bought = (ids) => ids.filter((id) => item(id) && !['consumable', 'trinket'].includes(item(id).category));
 
+// Nothing bought yet (a trinket does not count): time for the starting items.
+export const needsStarters = (game) => !game.me.items.some((id) => item(id) && item(id).category !== 'trinket');
+export const startersCost = (build) => build.starters.reduce((sum, s) => sum + (item(s.id) ? item(s.id).gold.total * s.count : 0), 0);
+
 export function myRole(game) {
   if (game.me.position) return game.me.position;
   const c = champ(game.me.championId);

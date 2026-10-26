@@ -27,6 +27,7 @@ test('ranked stats are read for the game\'s queue', () => {
   assert.deepStrictEqual(rankFrom(stats, 'RANKED_SOLO_5x5'), { tier: 'GOLD', division: 'II', lp: 45, wins: 60, losses: 50 });
   assert.strictEqual(rankFrom(stats, 'RANKED_FLEX_SR').division, null);
   assert.strictEqual(rankFrom({ queueMap: { RANKED_SOLO_5x5: { tier: 'NONE' } } }, 'RANKED_SOLO_5x5').tier, null);
+  assert.deepStrictEqual(rankFrom({ queueMap: { RANKED_SOLO_5x5: { tier: '', previousSeasonEndTier: 'SILVER', previousSeasonEndDivision: 'III' } } }, 'RANKED_SOLO_5x5').previous, { tier: 'SILVER', division: 'III' });
 });
 
 test('roster positions and ranks fill in the live data', async () => {
@@ -42,4 +43,20 @@ test('roster positions and ranks fill in the live data', async () => {
   assert.strictEqual(game.me.rank.tier, 'BRONZE');
   assert.deepStrictEqual([game.enemies[0].position, game.enemies[0].rank.tier], ['SUPPORT', 'SILVER']);
   assert.strictEqual(await fetchRoster(lcu, session(420), db, 'RANKED_SOLO_5x5'), null);
+});
+
+test('summoner spells (D/F) and runes are read from live data', () => {
+  const spell = (key) => ({ displayName: key, rawDisplayName: `GeneratedTip_SummonerSpell_${key}_DisplayName` });
+  const player = {
+    championName: 'Jinx', rawChampionName: 'game_character_displayname_Jinx', riotId: 'Jinx#1', team: 'ORDER', level: 1, items: [], scores: {},
+    summonerSpells: { summonerSpellOne: spell('SummonerFlash'), summonerSpellTwo: spell('SummonerHeal') }, runes: { keystone: { id: 8008 } },
+  };
+  const fullRunes = {
+    primaryRuneTree: { id: 8000 }, secondaryRuneTree: { id: 8100 },
+    generalRunes: [8008, 9111, 9104, 8014, 8139, 8135].map((id) => ({ id })), statRunes: [5005, 5008, 5011].map((id) => ({ id })),
+  };
+  const game = normalize({ activePlayer: { riotId: 'Jinx#1', currentGold: 500, fullRunes }, allPlayers: [player], gameData: {} }, db);
+  assert.deepStrictEqual(game.me.spells, [4, 7]);
+  assert.strictEqual(game.me.keystone, 8008);
+  assert.deepStrictEqual(game.me.runes, { primaryStyleId: 8000, subStyleId: 8100, selectedPerkIds: [8008, 9111, 9104, 8014, 8139, 8135, 5005, 5008, 5011] });
 });

@@ -3,10 +3,19 @@
 const POSITION = { TOP: 'TOP', JUNGLE: 'JUNGLE', MIDDLE: 'MIDDLE', BOTTOM: 'BOTTOM', UTILITY: 'SUPPORT' };
 const APEX = ['MASTER', 'GRANDMASTER', 'CHALLENGER'];
 
+const tierOf = (tier) => (tier && tier !== 'NONE' ? tier : null);
+
 function rankFrom(stats, queueType) {
   if (!stats) return null;
   const entry = (stats.queueMap && stats.queueMap[queueType]) || (stats.queues || []).find((q) => q.queueType === queueType);
-  if (!entry || !entry.tier || entry.tier === 'NONE') return { tier: null, wins: 0, losses: 0 };
+  if (!entry || !tierOf(entry.tier)) {
+    // Not placed this season yet: fall back to where the player ended last season.
+    const prev = entry && tierOf(entry.previousSeasonEndTier);
+    return {
+      tier: null, wins: 0, losses: 0,
+      previous: prev ? { tier: prev, division: APEX.includes(prev) || entry.previousSeasonEndDivision === 'NA' ? null : entry.previousSeasonEndDivision || null } : null,
+    };
+  }
   return {
     tier: entry.tier,
     division: APEX.includes(entry.tier) || entry.division === 'NA' ? null : entry.division,

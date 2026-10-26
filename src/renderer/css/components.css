@@ -105,6 +105,7 @@
 .rank-badge strong { color: var(--tier); }
 .rank-badge .rank-wr { color: var(--muted); }
 .rank-badge.unranked { color: var(--muted); }
+.rank-badge .rank-prev { color: var(--tier); opacity: 0.85; }
 .tier-iron { --tier: #9a8b84; }
 .tier-bronze { --tier: #c08457; }
 .tier-silver { --tier: #b8c4cc; }

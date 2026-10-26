@@ -52,7 +52,7 @@ body { display: flex; flex-direction: column; }
 .next-body .chip { margin-top: 6px; }
 .live-team { margin-bottom: 14px; }
 .enemy-title { color: var(--red); margin-bottom: 10px; }
-.live-row { display: grid; grid-template-columns: 22px 32px 190px 210px 80px 64px 1fr; gap: 10px; align-items: center; padding: 6px 8px; border: 1px solid transparent; border-radius: var(--radius); }
+.live-row { display: grid; grid-template-columns: 22px 32px 190px 210px 90px 80px 64px 1fr; gap: 10px; align-items: center; padding: 6px 8px; border: 1px solid transparent; border-radius: var(--radius); }
 .live-row.opponent { border-color: rgba(232, 64, 87, 0.55); background: linear-gradient(90deg, rgba(232, 64, 87, 0.12), transparent); }
 .live-row.me { border-color: rgba(10, 200, 185, 0.45); background: linear-gradient(90deg, rgba(10, 200, 185, 0.1), transparent); }
 .live-row.dead { opacity: 0.5; }
@@ -62,6 +62,18 @@ body { display: flex; flex-direction: column; }
 .live-name strong { color: var(--gold-hi); }
 .live-kda { color: var(--gold-hi); font-variant-numeric: tabular-nums; }
 .live-items { gap: 4px; }
+.live-loadout { display: flex; align-items: center; gap: 3px; }
+.live-loadout .item-icon { width: 24px; height: 24px; }
+.live-loadout .rune-icon { margin-left: 4px; }
+.starters { margin: 10px 0 8px; }
+.loadout-current { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 6px 10px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-0); }
+.loadout-current.match { border-color: rgba(63, 178, 127, 0.45); }
+.loadout-current.differs { border-color: rgba(232, 64, 87, 0.45); }
+.loadout-current strong { color: var(--gold-hi); }
+.loadout-current .chip { margin-left: auto; }
+.spell-slot { position: relative; }
+.spell-slot .item-icon { width: 30px; height: 30px; }
+.spell-slot kbd { position: absolute; right: -4px; bottom: -4px; font: 700 9px var(--font); padding: 0 3px; background: var(--bg-0); border: 1px solid var(--gold-dim); color: var(--gold-hi); }
 .sit-item { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border: 1px solid var(--line); border-radius: var(--radius); margin: 0 8px 8px 0; flex-wrap: wrap; }
 
 @media (max-width: 1250px) {

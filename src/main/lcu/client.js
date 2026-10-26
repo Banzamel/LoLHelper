@@ -6,7 +6,7 @@ const WebSocket = require('ws');
 const { findCredentials } = require('./credentials');
 
 const agent = new https.Agent({ rejectUnauthorized: false });
-const SUBSCRIPTIONS = ['OnJsonApiEvent_lol-champ-select_v1_session', 'OnJsonApiEvent_lol-gameflow_v1_gameflow-phase'];
+const SUBSCRIPTIONS = ['OnJsonApiEvent_lol-champ-select_v1_session', 'OnJsonApiEvent_lol-gameflow_v1_gameflow-phase', 'OnJsonApiEvent_lol-perks_v1_currentpage'];
 
 class LcuClient extends EventEmitter {
   constructor() {

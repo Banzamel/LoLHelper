@@ -1,12 +1,16 @@
 // Draft view: both teams (live from champion select or set manually), the lane opponent
-// and counter-pick recommendations for the player's role.
+// and counter-pick recommendations for the player's role; once the player has a champion,
+// the runes, spells and starting items for it (compared with what is set in the client).
 import { t } from '../js/i18n.js';
 import { state, champ, subscribe, isSupported } from '../js/store.js';
-import { el, champIcon, roleIcon, ROLES, scoreRing, reasonChip, pickChampion } from '../js/ui.js';
+import { el, champIcon, itemIcon, roleIcon, ROLES, scoreRing, reasonChip, pickChampion } from '../js/ui.js';
+import { loadoutPanels } from './loadout.js';
 import { navigate } from '../js/app.js';
 
 let lastQuery = '';
 let lastResults = [];
+let lastSetupQuery = '';
+let lastSetup = null;
 
 function liveModel(d) {
   const me = d.myTeam.find((m) => m.isMe);
@@ -88,6 +92,24 @@ async function loadRecommendations(model, opponent) {
   return lastResults;
 }
 
+async function loadSetup(model, opponent, championId) {
+  const query = { championId, enemyId: opponent, role: model.myRole, enemyIds: model.enemies.map((e) => e.championId).filter(Boolean) };
+  const key = JSON.stringify(query);
+  // Cache the promise, so overlapping redraws share one request.
+  if (key !== lastSetupQuery) { lastSetupQuery = key; lastSetup = window.api.build(query); }
+  return lastSetup;
+}
+
+function setupSection(build, model, me) {
+  const current = model.live && state.draft ? { runes: state.draft.myRunes, spells: me.spells } : null;
+  return el('section', { class: 'panel gold draft-setup' },
+    el('div', { class: 'panel-title' }, champIcon(build.championId, { size: 'sm' }), el('h2', {}, t('draft.setup')), el('div', { class: 'spacer' }),
+      el('span', { class: 'muted' }, t('build.start')),
+      el('div', { class: 'build-strip' }, build.starters.map((s) => itemIcon(s.id, { size: 'sm', count: s.count })))),
+    el('p', { class: 'muted small' }, t('draft.setupHint', { champion: champ(build.championId).name })),
+    loadoutPanels(build, { current }));
+}
+
 export function renderDraft(root) {
   const container = el('div', { class: 'draft' });
   root.append(container);
@@ -153,5 +175,11 @@ async function drawInto(container) {
   const enemies = el('section', { class: 'panel team enemies' }, el('h2', {}, t('draft.enemies')),
     model.enemies.map((m, i) => slot(m, { enemy: true, opponent, onClick: model.live ? null : () => setEnemy(i), onOpponent: () => setOpponent(m) })));
 
-  container.replaceChildren(head, unsupported || '', hint || '', bans || '', el('div', { class: 'draft-grid' }, allies, center, enemies));
+  const me = model.allies.find((a) => a.isMe);
+  const myChamp = me && champ(me.championId) ? me.championId : null;
+  const setup = myChamp ? setupSection(await loadSetup(model, opponent, myChamp), model, me) : null;
+  const grid = el('div', { class: 'draft-grid' }, allies, center, enemies);
+  // After locking in, the setup matters more than further counter-picks.
+  const body = me && me.locked && setup ? [setup, grid] : [grid, setup || ''];
+  container.replaceChildren(head, unsupported || '', hint || '', bans || '', ...body);
 }

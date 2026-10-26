@@ -7,6 +7,18 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Added
+- **Your setup in Draft**: once you hover or lock a champion, the Draft view shows the runes, summoner spells,
+  skill order and starting items for it in your role and against the enemy team, with Export runes / Set spells.
+- **Your current choice vs the recommendation**: the rune page selected in the client and your D/F spells are
+  compared with the recommendation (matches / same keystone, other runes / differs) in Draft and in the Match view.
+- **Starting items** in the Match view and the widget while you have not bought anything yet.
+- Match view: every player's summoner spells (D/F) and keystone.
+- Unranked players show their rank from the end of last season, when they had one.
+
+### Fixed
+- Client phases "Game starting", "Reconnecting", "Waiting for stats" and others were shown untranslated.
+
 ## [0.4.0] - 2026-10-26
 
 ### Added

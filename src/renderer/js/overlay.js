@@ -3,7 +3,7 @@
 import { loadLanguage, setChampionResolver, t } from './i18n.js';
 import { state, setDatabase, champ, item, asset } from './store.js';
 import { el, itemIcon, champIcon, rankBadge } from './ui.js';
-import { bought, buildForGame, nextSkill } from './game.js';
+import { bought, buildForGame, nextSkill, needsStarters, startersCost } from './game.js';
 
 const widget = document.getElementById('widget');
 let ov = { moveMode: false, preview: false, opacity: 0.92 };
@@ -38,13 +38,19 @@ async function draw() {
   const missing = it ? it.gold.total - game.me.gold : 0;
   const oppItems = opp ? bought(opp.items) : [];
 
+  const starting = needsStarters(game);
+  const startCost = starting ? startersCost(build) : 0;
+  const nextBlock = starting
+    ? el('div', { class: `w-next ${startCost <= game.me.gold ? 'afford' : ''}` }, build.starters.map((s) => itemIcon(s.id, { count: s.count })),
+      el('div', {}, el('div', { class: 'gold-text w-next-cost' }, t('common.gold', { n: startCost }))))
+    : null;
   widget.replaceChildren(
-    el('div', { class: 'w-head' }, el('span', {}, t('live.nextItem')), el('div', { class: 'spacer' }),
+    el('div', { class: 'w-head' }, el('span', {}, t(starting ? 'live.starters' : 'live.nextItem')), el('div', { class: 'spacer' }),
       el('span', { class: 'gold-text' }, t('common.gold', { n: game.me.gold }))),
-    it ? el('div', { class: `w-next ${missing <= 0 ? 'afford' : ''}` }, itemIcon(it.id),
+    nextBlock || (it ? el('div', { class: `w-next ${missing <= 0 ? 'afford' : ''}` }, itemIcon(it.id),
       el('div', {}, el('div', { class: 'w-next-name' }, it.name), el('div', { class: 'gold-text w-next-cost' }, t('common.gold', { n: it.gold.total })),
         el('span', { class: `chip ${missing <= 0 ? 'plus' : ''}` }, missing <= 0 ? t('overlay.canAfford') : t('live.missingGold', { n: missing }))))
-      : el('div', { class: 'w-muted' }, t('live.buildDone')),
+      : el('div', { class: 'w-muted' }, t('live.buildDone'))),
     el('div', { class: 'w-strip' }, fullIds.map((id) => el('div', { class: ownedSet.has(id) ? 'owned' : '' }, itemIcon(id)))),
     skillRow(build, game.me.level, game.me.championId) || '',
     opp ? el('div', { class: 'w-opp' }, champIcon(opp.championId, { size: 'xs' }), el('span', {}, champ(opp.championId) ? champ(opp.championId).name : ''),

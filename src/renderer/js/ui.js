@@ -47,8 +47,13 @@ export const ROLES = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT'];
 // Ranked tier badge: "Gold II · 45 LP" plus the season winrate; compact = tier and division only.
 export function rankBadge(rank, { compact = false } = {}) {
   if (!rank) return null;
-  if (!rank.tier) return el('span', { class: 'rank-badge unranked' }, t('rank.unranked'));
-  const name = `${t(`rank.${rank.tier}`)}${rank.division ? ` ${rank.division}` : ''}`;
+  const tierName = (r) => `${t(`rank.${r.tier}`)}${r.division ? ` ${r.division}` : ''}`;
+  if (!rank.tier) {
+    const prev = rank.previous;
+    return el('span', { class: `rank-badge unranked ${prev ? `tier-${prev.tier.toLowerCase()}` : ''}`, title: prev ? t('rank.previousHint') : null },
+      t('rank.unranked'), prev ? el('span', { class: 'rank-prev' }, t('rank.previous', { rank: tierName(prev) })) : null);
+  }
+  const name = tierName(rank);
   const games = rank.wins + rank.losses;
   const title = games ? t('rank.record', { wins: rank.wins, losses: rank.losses }) : null;
   return el('span', { class: `rank-badge tier-${rank.tier.toLowerCase()}`, title },

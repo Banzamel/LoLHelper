@@ -8,6 +8,9 @@ const { inferRoles } = require('../engine/roles');
 
 const ROSTER_RETRY_MS = 5000;
 
+const pageOf = (p) => (p && p.selectedPerkIds && p.selectedPerkIds.length
+  ? { name: p.name, primaryStyleId: p.primaryStyleId, subStyleId: p.subStyleId, selectedPerkIds: p.selectedPerkIds } : null);
+
 class LcuWatcher {
   constructor({ getDb, send, onPhase = () => {} }) {
     this.onPhase = onPhase;
@@ -22,6 +25,7 @@ class LcuWatcher {
     this.rosterTimer = null;
     this.mastery = {};
     this.pickable = [];
+    this.runePage = null;
     this.lcu.on('status', (s) => this.onStatus(s));
     this.lcu.on('event', (e) => this.onEvent(e));
   }
@@ -45,6 +49,7 @@ class LcuWatcher {
 
   onEvent({ uri, eventType, data }) {
     if (uri === '/lol-gameflow/v1/gameflow-phase') this.setPhase(data);
+    if (uri === '/lol-perks/v1/currentpage') this.setRunePage(eventType === 'Delete' ? null : data);
     if (uri === '/lol-champ-select/v1/session') {
       if (eventType === 'Delete') this.setDraft(null);
       else this.refreshSession(data);
@@ -96,12 +101,20 @@ class LcuWatcher {
     const draft = normalizeSession(session, db);
     if (draft && (!this.draft || this.draft.gameId !== draft.gameId)) {
       try { this.pickable = await this.lcu.get('/lol-champ-select/v1/pickable-champion-ids'); } catch { this.pickable = []; }
+      try { this.runePage = await this.lcu.get('/lol-perks/v1/currentpage'); } catch { this.runePage = null; }
     }
     if (draft) {
       draft.enemyRoles = inferRoles(db, draft.theirTeam.map((m) => ({ cellId: m.cellId, championId: m.championId, role: m.role })));
       draft.allyRoles = inferRoles(db, draft.myTeam.map((m) => ({ cellId: m.cellId, championId: m.championId || m.hoverId, role: m.role })));
     }
+    if (draft) draft.myRunes = pageOf(this.runePage);
     this.setDraft(draft);
+  }
+
+  // The rune page selected in the client changed (the player picked or edited a page).
+  setRunePage(page) {
+    this.runePage = page;
+    if (this.draft) this.setDraft({ ...this.draft, myRunes: pageOf(page) });
   }
 
   setDraft(draft) {

@@ -31,6 +31,27 @@ function championIdOf(player, db) {
   return found ? found.id : raw || null;
 }
 
+// Summoner spell id from "GeneratedTip_SummonerSpell_SummonerFlash_DisplayName" (longest
+// matching spell key, so variants like SummonerSmite… still resolve), else by English name.
+function spellIdOf(spell, db) {
+  if (!spell) return null;
+  const raw = spell.rawDisplayName || '';
+  const list = db.summoners || [];
+  const byKey = list.filter((s) => raw.includes(s.key)).sort((a, b) => b.key.length - a.key.length)[0];
+  const found = byKey || list.find((s) => s.nameEn === spell.displayName);
+  return found ? found.id : null;
+}
+
+// The local player's full rune page in the client's format (keystone first, then shards).
+function runePageOf(full) {
+  if (!full || !full.primaryRuneTree) return null;
+  return {
+    primaryStyleId: full.primaryRuneTree.id,
+    subStyleId: full.secondaryRuneTree ? full.secondaryRuneTree.id : null,
+    selectedPerkIds: [...(full.generalRunes || []), ...(full.statRunes || [])].map((r) => r.id),
+  };
+}
+
 function normalize(data, db, roster = null) {
   const meName = data.activePlayer.riotId || data.activePlayer.summonerName;
   const fromRoster = (championId, team) => (roster || []).find((r) => r.championId === championId && r.team === team) || {};
@@ -45,6 +66,9 @@ function normalize(data, db, roster = null) {
       rank: extra.rank || null,
       level: p.level,
       dead: p.isDead,
+      // [D, F] as bound in the game.
+      spells: p.summonerSpells ? [spellIdOf(p.summonerSpells.summonerSpellOne, db), spellIdOf(p.summonerSpells.summonerSpellTwo, db)] : [],
+      keystone: p.runes && p.runes.keystone ? p.runes.keystone.id : null,
       items: (p.items || []).map((i) => i.itemID),
       scores: p.scores || {},
     };
@@ -55,7 +79,7 @@ function normalize(data, db, roster = null) {
   return {
     gameTime: data.gameData ? data.gameData.gameTime : 0,
     gameMode: data.gameData ? data.gameData.gameMode : null,
-    me: me && { ...me, gold: Math.floor(data.activePlayer.currentGold || 0) },
+    me: me && { ...me, gold: Math.floor(data.activePlayer.currentGold || 0), runes: runePageOf(data.activePlayer.fullRunes) },
     allies,
     enemies,
   };
