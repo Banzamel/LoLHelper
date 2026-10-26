@@ -78,7 +78,8 @@ function runePage(runes) {
       el('div', { class: 'shards' }, ids.slice(6).map((id) => el('div', { class: 'rune-cell' }, runeIcon(id, { size: 'sm' }), el('span', {}, t(`shard.${id}`)))))));
 }
 
-function skillTable(skills, champion) {
+// level: the champion's current level in a match; its next skill-up column is highlighted.
+function skillTable(skills, champion, level = null) {
   const icons = Object.fromEntries(champion.spells.map((s) => [s.key, s]));
   const maxRow = el('div', { class: 'skill-max' }, skills.max.map((k, i) => [
     i ? el('span', { class: 'arrow' }, '›') : null,
@@ -86,25 +87,31 @@ function skillTable(skills, champion) {
   ]));
   if (!skills.levels) return el('div', {}, maxRow, el('p', { class: 'muted small' }, t('loadout.noTable')));
   const rows = ['Q', 'W', 'E', 'R'].map((k) => el('div', { class: 'skill-row' }, el('span', { class: 'skill-label' }, k),
-    skills.levels.map((key, i) => el('span', { class: `skill-cell ${key === k ? `on ${k === 'R' ? 'ult' : ''}` : ''}`, title: t('champion.level', { n: i + 1 }) }, key === k ? String(i + 1) : ''))));
+    skills.levels.map((key, i) => el('span', {
+      class: `skill-cell ${key === k ? `on ${k === 'R' ? 'ult' : ''}` : ''} ${level !== null && i < level ? 'done' : ''} ${i === level ? 'next' : ''}`,
+      title: t('champion.level', { n: i + 1 }),
+    }, key === k ? String(i + 1) : ''))));
   return el('div', {}, maxRow, el('div', { class: 'skill-grid' }, rows),
     !skills.known ? el('p', { class: 'muted small' }, t('loadout.heuristic')) : null);
 }
 
-export function loadoutPanels(build, { inChampSelect = state.lcu.connected && !!state.draft, current = null } = {}) {
-  const c = champ(build.championId);
+export function skillsPanel(build, { level = null } = {}) {
+  return el('section', { class: 'panel build-section' }, el('h2', {}, t('loadout.skills')), skillTable(build.skills, champ(build.championId), level));
+}
+
+// parts: which panels to show — the Draft view needs runes and spells only.
+export function loadoutPanels(build, { inChampSelect = state.lcu.connected && !!state.draft, current = null, parts = ['runes', 'spells', 'skills'] } = {}) {
   const connected = state.lcu.connected;
-  const runesPanel = build.runes ? el('section', { class: 'panel build-section' },
+  const runesPanel = build.runes && parts.includes('runes') ? el('section', { class: 'panel build-section' },
     el('div', { class: 'panel-title' }, el('h2', {}, t('loadout.runes')), el('div', { class: 'spacer' }),
       el('button', { class: 'btn small primary', disabled: connected ? null : true, title: connected ? null : t('build.needClient'), onClick: () => exportRunes(build) }, t('loadout.exportRunes'))),
     current ? currentRunes(build.runes, current.runes) : null,
     runePage(build.runes),
     build.runes.reasons.length ? el('div', { class: 'chips' }, build.runes.reasons.map((k) => el('span', { class: 'chip' }, t(k)))) : null) : '';
-  const spellsPanel = el('section', { class: 'panel build-section' },
+  const spellsPanel = parts.includes('spells') ? el('section', { class: 'panel build-section' },
     el('div', { class: 'panel-title' }, el('h2', {}, t('loadout.spells')), el('div', { class: 'spacer' }),
       el('button', { class: 'btn small', disabled: inChampSelect ? null : true, title: inChampSelect ? null : t('loadout.needChampSelect'), onClick: () => exportSpells(build) }, t('loadout.exportSpells'))),
     current ? currentSpells(build.spells.ids, current.spells) : null,
-    el('div', { class: 'build-strip' }, build.spells.ids.map((id) => summonerIcon(id)), el('span', { class: 'chip' }, t(build.spells.reason))));
-  const skillsPanel = el('section', { class: 'panel build-section' }, el('h2', {}, t('loadout.skills')), skillTable(build.skills, c));
-  return el('div', { class: 'loadout' }, runesPanel, el('div', { class: 'loadout-side' }, spellsPanel, skillsPanel));
+    el('div', { class: 'build-strip' }, build.spells.ids.map((id) => summonerIcon(id)), el('span', { class: 'chip' }, t(build.spells.reason)))) : '';
+  return el('div', { class: 'loadout' }, runesPanel, el('div', { class: 'loadout-side' }, spellsPanel, parts.includes('skills') ? skillsPanel(build) : ''));
 }

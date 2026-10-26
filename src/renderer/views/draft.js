@@ -107,7 +107,7 @@ function setupSection(build, model, me) {
       el('span', { class: 'muted' }, t('build.start')),
       el('div', { class: 'build-strip' }, build.starters.map((s) => itemIcon(s.id, { size: 'sm', count: s.count })))),
     el('p', { class: 'muted small' }, t('draft.setupHint', { champion: champ(build.championId).name })),
-    loadoutPanels(build, { current }));
+    loadoutPanels(build, { current, parts: ['runes', 'spells'] }));
 }
 
 export function renderDraft(root) {
@@ -179,7 +179,6 @@ async function drawInto(container) {
   const myChamp = me && champ(me.championId) ? me.championId : null;
   const setup = myChamp ? setupSection(await loadSetup(model, opponent, myChamp), model, me) : null;
   const grid = el('div', { class: 'draft-grid' }, allies, center, enemies);
-  // After locking in, the setup matters more than further counter-picks.
-  const body = me && me.locked && setup ? [setup, grid] : [grid, setup || ''];
-  container.replaceChildren(head, unsupported || '', hint || '', bans || '', ...body);
+  // Runes and spells go first, so they are visible without scrolling.
+  container.replaceChildren(head, unsupported || '', setup || '', hint || '', bans || '', grid);
 }

@@ -83,7 +83,7 @@ npm run dist         # build the installer -> dist/LoLHelper-Setup-<version>.exe
 ```
 
 Development switches: `LOLHELPER_LIVE=1` polls the Live Client Data API without waiting for the client's
-game phase (useful with a mock server on `https://127.0.0.1:2999`); `LOLHELPER_ROSTER=<file.json>` supplies
+game phase (useful with a mock server on `https://127.0.0.1:2999`) and ignores the client's game phase; `LOLHELPER_ROSTER=<file.json>` supplies
 the match roster (roles, ranks) without a League client.
 
 ### Project layout

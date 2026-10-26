@@ -8,6 +8,7 @@ import { bought, buildForGame, nextSkill, needsStarters, startersCost } from './
 const widget = document.getElementById('widget');
 let ov = { moveMode: false, preview: false, opacity: 0.92 };
 let lastKey = null;
+let couldAfford = false;
 
 function hotkey(key) {
   return (key || '').replace('CommandOrControl', 'Ctrl');
@@ -44,6 +45,14 @@ async function draw() {
     ? el('div', { class: `w-next ${startCost <= game.me.gold ? 'afford' : ''}` }, build.starters.map((s) => itemIcon(s.id, { count: s.count })),
       el('div', {}, el('div', { class: 'gold-text w-next-cost' }, t('common.gold', { n: startCost }))))
     : null;
+  // Pulse once when the next purchase becomes affordable, so it catches the eye mid-fight.
+  const canAfford = starting ? startCost <= game.me.gold : !!it && missing <= 0;
+  if (canAfford && !couldAfford) {
+    widget.classList.remove('pulse');
+    void widget.offsetWidth;
+    widget.classList.add('pulse');
+  }
+  couldAfford = canAfford;
   widget.replaceChildren(
     el('div', { class: 'w-head' }, el('span', {}, t(starting ? 'live.starters' : 'live.nextItem')), el('div', { class: 'spacer' }),
       el('span', { class: 'gold-text' }, t('common.gold', { n: game.me.gold }))),

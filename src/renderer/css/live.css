@@ -35,6 +35,9 @@ body { display: flex; flex-direction: column; }
 .skill-label { color: var(--gold); font-weight: 700; font-size: 12px; display: grid; place-items: center; }
 .skill-cell { height: 20px; background: var(--bg-0); border: 1px solid var(--line); font-size: 10px; display: grid; place-items: center; color: var(--bg-0); }
 .skill-cell.on { background: linear-gradient(180deg, #0a5f66, #063a40); border-color: var(--teal); color: var(--gold-hi); }
+.skill-cell.done { opacity: 0.45; }
+.skill-cell.next { outline: 2px solid var(--gold-hi); outline-offset: 1px; opacity: 1; }
+.live > .build-section { margin-bottom: 14px; }
 .skill-cell.on.ult { background: linear-gradient(180deg, #785a28, #463714); border-color: var(--gold); }
 
 /* Live match */

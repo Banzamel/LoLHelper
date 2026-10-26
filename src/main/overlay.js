@@ -6,6 +6,8 @@ const { BrowserWindow, globalShortcut, screen } = require('electron');
 const path = require('path');
 
 const SIZE = { width: 340, height: 250 };
+// A borderless game window can take the top of the z-order back; re-assert it this often.
+const KEEP_ON_TOP_MS = 1500;
 
 class Overlay {
   constructor({ settings, send }) {
@@ -17,6 +19,7 @@ class Overlay {
     this.moveMode = false;
     this.preview = false;
     this.saveTimer = null;
+    this.topTimer = null;
   }
 
   config() { return this.settings.get('overlay'); }
@@ -74,10 +77,22 @@ class Overlay {
       win.setFocusable(this.moveMode);
       if (!win.isVisible()) win.showInactive();
       win.setAlwaysOnTop(true, 'screen-saver');
-    } else if (this.win && this.win.isVisible()) {
-      this.win.hide();
+      this.keepOnTop(true);
+    } else {
+      this.keepOnTop(false);
+      if (this.win && this.win.isVisible()) this.win.hide();
     }
     this.pushState();
+  }
+
+  keepOnTop(on) {
+    if (!on) { clearInterval(this.topTimer); this.topTimer = null; return; }
+    if (this.topTimer) return;
+    this.topTimer = setInterval(() => {
+      if (!this.win || this.win.isDestroyed() || !this.win.isVisible()) return;
+      this.win.setAlwaysOnTop(true, 'screen-saver');
+      this.win.moveTop();
+    }, KEEP_ON_TOP_MS);
   }
 
   setGameActive(active) {
@@ -129,6 +144,7 @@ class Overlay {
   }
 
   destroy() {
+    this.keepOnTop(false);
     globalShortcut.unregisterAll();
     if (this.win && !this.win.isDestroyed()) this.win.destroy();
   }

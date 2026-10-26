@@ -28,7 +28,8 @@ let win = null;
 let db = null;
 let settings = null;
 const send = (channel, payload) => { if (win && !win.isDestroyed()) win.webContents.send(channel, payload); };
-const live = new LiveClient(() => db, () => watcher.roster);
+let devRoster = null;
+const live = new LiveClient(() => db, () => devRoster || watcher.roster);
 live.on('game', (game) => {
   send('live:game', game);
   if (overlay) {
@@ -39,7 +40,13 @@ live.on('game', (game) => {
 // The Live Client API only exists while a match runs, so poll it during InProgress only,
 // and only in supported modes (role-based Summoner's Rift queues).
 const watcher = new LcuWatcher({
-  getDb: () => db, send, onPhase: (phase) => (phase === 'InProgress' && watcher.supported ? live.start() : live.stop()),
+  getDb: () => db,
+  send,
+  onPhase: (phase) => {
+    if (process.env.LOLHELPER_LIVE) return; // development: polling is forced on, see below
+    if (phase === 'InProgress' && watcher.supported) live.start();
+    else live.stop();
+  },
 });
 let updater = null;
 let overlay = null;
@@ -179,7 +186,7 @@ app.whenReady().then(() => {
   // Development: LOLHELPER_LIVE=1 polls the Live Client API without waiting for a game phase.
   if (process.env.LOLHELPER_LIVE) live.start();
   // Development: LOLHELPER_ROSTER=<file.json> supplies the match roster (roles, ranks) without a client.
-  if (process.env.LOLHELPER_ROSTER) watcher.roster = JSON.parse(fs.readFileSync(process.env.LOLHELPER_ROSTER, 'utf8'));
+  if (process.env.LOLHELPER_ROSTER) devRoster = JSON.parse(fs.readFileSync(process.env.LOLHELPER_ROSTER, 'utf8'));
 });
 
 app.on('window-all-closed', () => app.quit());

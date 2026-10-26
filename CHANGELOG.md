@@ -7,6 +7,21 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Added
+- The widget pulses green when you can afford the next purchase.
+- Match view: the skill order sits right below the build, with levels already taken dimmed and the next
+  skill-up outlined.
+
+### Changed
+- Draft: "Your setup for this game" (runes, summoner spells, starting items) is always at the top once you
+  hover or lock a champion, so it is visible without scrolling; the skill order moved to the Match view.
+- Match view: runes and spells moved to the bottom (they cannot change during a match).
+- Export buttons renamed to "Set runes in client" / "Set spells in client".
+
+### Fixed
+- The widget could disappear behind a Borderless game window after a moment; it now re-asserts its place
+  on top every 1.5 s without taking focus from the game.
+
 ## [0.5.0] - 2026-10-26
 
 ### Added

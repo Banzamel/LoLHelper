@@ -4,7 +4,7 @@
 import { t } from '../js/i18n.js';
 import { state, champ, item, subscribe, isSupported } from '../js/store.js';
 import { el, champIcon, itemIcon, roleIcon, rankBadge, runeIcon, summonerIcon } from '../js/ui.js';
-import { loadoutPanels } from './loadout.js';
+import { loadoutPanels, skillsPanel } from './loadout.js';
 import { bought, buildForGame, needsStarters, startersCost } from '../js/game.js';
 
 const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -68,6 +68,7 @@ async function draw(container, game) {
         el('div', { class: 'build-strip' }, fullIds.map((id) => el('div', { class: `owned-wrap ${ownedSet.has(id) ? 'owned' : ''}` }, itemIcon(id)))),
         build.threats.length ? el('div', { class: 'chips live-threats' }, build.threats.map((x) => el('span', { class: 'chip minus' }, t(x.key, x.params)))) : null),
       needsStarters(game) ? startersCard(build, game.me.gold) : nextItemCard(build, game.me.gold)),
+    skillsPanel(build, { level: game.me.level }),
     el('section', { class: 'panel live-team' }, el('h2', { class: 'enemy-title' }, t('draft.enemies')),
       game.enemies.map((p) => playerRow(p, { highlight: opp && p.championId === opp.championId }))),
     el('section', { class: 'panel live-team' }, el('h2', { class: 'ally-title' }, t('draft.allies')),
@@ -75,7 +76,7 @@ async function draw(container, game) {
     build.situational.length ? el('section', { class: 'panel' }, el('h2', {}, t('build.situational')),
       el('div', { class: 'chips' }, build.situational.map((s) => el('span', { class: 'sit-item' }, itemIcon(s.id, { size: 'sm' }),
         el('span', {}, item(s.id).name), s.reasons.map((r) => el('span', { class: 'chip' }, t(r.key))))))) : '',
-    loadoutPanels(build, { inChampSelect: false, current: { runes: game.me.runes, spells: game.me.spells } }));
+    loadoutPanels(build, { inChampSelect: false, current: { runes: game.me.runes, spells: game.me.spells }, parts: ['runes', 'spells'] }));
 }
 
 export function renderLive(root) {
@@ -84,7 +85,7 @@ export function renderLive(root) {
   let lastKey = null;
   const update = () => {
     const g = state.game;
-    const key = g && g.me ? JSON.stringify([g.me.items, Math.floor(g.me.gold / 100), [...g.enemies, ...g.allies].map((e) => [e.items, e.level, e.scores, e.dead, e.position, e.rank]), Math.floor(g.gameTime / 15)]) : `none-${isSupported()}-${state.phase}`;
+    const key = g && g.me ? JSON.stringify([g.me.items, g.me.level, Math.floor(g.me.gold / 100), [...g.enemies, ...g.allies].map((e) => [e.items, e.level, e.scores, e.dead, e.position, e.rank]), Math.floor(g.gameTime / 15)]) : `none-${isSupported()}-${state.phase}`;
     if (key === lastKey) return;
     lastKey = key;
     draw(container, g);
