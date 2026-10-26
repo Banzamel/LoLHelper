@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-26
+
 ### Changed
 - **Runes come from the client's own recommendations**: with the League client connected, the rune page is
   the one of Riot's recommended pages for the champion (the ones offered in champion select) that best fits
@@ -129,7 +131,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/Banzamel/LoLHelper/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Banzamel/LoLHelper/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Banzamel/LoLHelper/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Banzamel/LoLHelper/compare/v0.3.1...v0.4.0
