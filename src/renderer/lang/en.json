@@ -363,5 +363,6 @@
   "live.startersHint": "Buy at the start of the match",
   "live.startersCost": "Total {n} gold",
   "rank.previous": "last season: {rank}",
-  "rank.previousHint": "No ranked games this season — rank at the end of last season."
+  "rank.previousHint": "No ranked games this season — rank at the end of last season.",
+  "loadout.riotPage": "The page from Riot's recommendations (offered in the client) that best fits the matchup"
 }

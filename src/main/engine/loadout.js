@@ -116,4 +116,13 @@ function recommendLoadout(db, { champ, cls, role, laner, threats }) {
   };
 }
 
-module.exports = { recommendLoadout };
+// Of the pages the client recommends, the one closest to the matchup-tuned page: same
+// keystone first, then the same trees and the most shared runes.
+function closestPage(pages, ours) {
+  const score = (p) => (p.selectedPerkIds[0] === ours.selectedPerkIds[0] ? 10 : 0)
+    + (p.primaryStyleId === ours.primaryStyleId ? 3 : 0) + (p.subStyleId === ours.subStyleId ? 2 : 0)
+    + p.selectedPerkIds.filter((id) => ours.selectedPerkIds.includes(id)).length;
+  return pages.reduce((best, p) => (!best || score(p) > score(best) ? p : best), null);
+}
+
+module.exports = { recommendLoadout, closestPage };

@@ -64,3 +64,26 @@ test('live client data is normalized with real positions', () => {
   assert.strictEqual(game.me.gold, 500);
   assert.deepStrictEqual(game.enemies.map((e) => [e.championId, e.position]), [['MonkeyKing', 'TOP'], ['Thresh', 'SUPPORT']]);
 });
+
+test('fighters tagged TANK build as bruisers (Xin Zhao: Scorchclaw, Conqueror, one anti-heal item)', () => {
+  const b = recommendBuild(db, { championId: 'XinZhao', enemyId: 'Warwick', role: 'JUNGLE', enemyIds: ['Sion', 'Warwick', 'Akali', 'Kalista', 'Teemo'] });
+  const name = (id) => db.itemById[id].nameEn;
+  assert.strictEqual(b.cls, 'bruiser');
+  assert.strictEqual(name(b.starters[0].id), 'Scorchclaw Pup');
+  assert.strictEqual(b.runes.selectedPerkIds[0], 8010);
+  assert.ok(b.full.filter((id) => db.itemById[id].features.flags.grievous).length <= 1);
+  assert.strictEqual(recommendBuild(db, { championId: 'Zac', role: 'JUNGLE' }).cls, 'tank');
+});
+
+test('the closest client-recommended rune page wins', () => {
+  const { closestPage } = require('../src/main/engine/loadout');
+  const page = (ks, primary, sub) => ({ primaryStyleId: primary, subStyleId: sub, selectedPerkIds: [ks, 1, 2, 3, 4, 5, 6, 7, 8] });
+  const pages = [page(8005, 8000, 8300), page(8010, 8000, 8300), page(9923, 8100, 8000)];
+  assert.strictEqual(closestPage(pages, page(8010, 8000, 8400)).selectedPerkIds[0], 8010);
+  assert.strictEqual(closestPage([], page(8010, 8000, 8400)), null);
+});
+
+test('positions are ordered by play rate', () => {
+  assert.strictEqual(db.byId.Teemo.positions[0], 'TOP');
+  assert.strictEqual(db.byId.Akali.positions[0], 'MIDDLE');
+});

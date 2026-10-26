@@ -7,6 +7,21 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Changed
+- **Runes come from the client's own recommendations**: with the League client connected, the rune page is
+  the one of Riot's recommended pages for the champion (the ones offered in champion select) that best fits
+  the matchup, so "Set runes in client" sets a page you also see in the client.
+- **Better core items**: each class has a list of proven core items (Trinity Force, Sundered Sky, Sterak's
+  Gage for bruisers; Infinity Edge, Kraken Slayer for marksmen…), which stat values alone undervalued. At most
+  one anti-heal item per build; crit items are not suggested to non-marksmen.
+- Champion positions are ordered by play rate (Meraki Analytics), so the most played role comes first and
+  enemy roles in draft are guessed better; an off-role guess (e.g. Teemo jungle while enemies are still
+  picking) is not shown as your lane opponent. Database schema 3 — the bundled data is used until you update.
+
+### Fixed
+- Fighters tagged as tanks (Xin Zhao, Warwick, Garen, Sett, Hecarim, Volibear…) were built as tanks: tank
+  items, Aftershock and the green jungle pet. They now get bruiser builds, Conqueror and Scorchclaw.
+
 ## [0.6.0] - 2026-10-26
 
 ### Added

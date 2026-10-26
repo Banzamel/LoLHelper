@@ -4,6 +4,10 @@ const ROLES = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT'];
 const TAG_ROLE = { Marksman: 'BOTTOM', Support: 'SUPPORT', Mage: 'MIDDLE', Assassin: 'MIDDLE', Fighter: 'TOP', Tank: 'TOP' };
 
 function fit(champ, role) {
+  // Play rates: a role the champion is rarely played in (Teemo jungle) weighs little.
+  const rates = champ.positionRates;
+  const total = rates ? Object.values(rates).reduce((a, b) => a + b, 0) : 0;
+  if (total > 0) return 2 * ((rates[role] || 0) / total) + (champ.positions.includes(role) ? 0.3 : 0);
   let w = 0;
   if (champ.positions.includes(role)) w += 1 + 1 / champ.positions.length;
   if (TAG_ROLE[champ.tags[0]] === role) w += 0.4;

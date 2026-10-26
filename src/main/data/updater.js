@@ -12,6 +12,8 @@ const { SCHEMA } = require('./store');
 
 const DDRAGON = 'https://ddragon.leagueoflegends.com';
 const MERAKI = 'https://cdn.merakianalytics.com/riot/lol/resources/latest/en-US/champions.json';
+// Play rate per position (% of games), keyed by champion key.
+const MERAKI_RATES = 'https://cdn.merakianalytics.com/riot/lol/resources/latest/en-US/championrates.json';
 const SPELL_KEYS = ['Q', 'W', 'E', 'R'];
 const SR_MAP = '11';
 
@@ -48,7 +50,18 @@ function fallbackPositions(tags) {
   return [...new Set(tags.map((t) => map[t]).filter(Boolean))];
 }
 
-function buildChampion(en, meraki) {
+// Positions ordered by how often the champion is played there (most popular first).
+function positionsOf(en, meraki, rates) {
+  const base = meraki && meraki.positions.length ? meraki.positions : fallbackPositions(en.tags);
+  if (!rates) return { positions: base, positionRates: null };
+  const positionRates = {};
+  for (const [pos, v] of Object.entries(rates)) positionRates[pos === 'UTILITY' ? 'SUPPORT' : pos] = Math.round((v.playRate || 0) * 100) / 100;
+  const rated = Object.keys(positionRates).filter((p) => positionRates[p] > 0);
+  const positions = [...new Set([...rated, ...base])].sort((a, b) => (positionRates[b] || 0) - (positionRates[a] || 0));
+  return { positions, positionRates };
+}
+
+function buildChampion(en, meraki, rates) {
   const r = (meraki && meraki.attributeRatings) || {};
   return {
     id: en.id,
@@ -57,7 +70,7 @@ function buildChampion(en, meraki) {
     resource: meraki ? meraki.resource : (en.partype === 'Mana' ? 'MANA' : 'NONE'),
     info: en.info,
     stats: en.stats,
-    positions: meraki && meraki.positions.length ? meraki.positions : fallbackPositions(en.tags),
+    ...positionsOf(en, meraki, rates),
     archetypes: meraki ? meraki.roles : en.tags.map((t) => t.toUpperCase()),
     attackType: meraki ? meraki.attackType : (en.stats.attackrange > 300 ? 'RANGED' : 'MELEE'),
     damageType: meraki && meraki.adaptiveType ? (meraki.adaptiveType === 'MAGIC_DAMAGE' ? 'AP' : 'AD') : (en.info.magic > en.info.attack ? 'AP' : 'AD'),
@@ -166,11 +179,12 @@ async function buildDatabase({ outDir, onProgress = () => {} }) {
     raw[loc] = { champs: champs.data, items: items.data, runes, summoners: summoners.data };
   }));
   const meraki = await getJson(MERAKI).catch(() => ({}));
+  const rates = (await getJson(MERAKI_RATES).catch(() => ({}))).data || {};
 
   onProgress({ key: 'update.analyzing', pct: 15 });
   const en = raw.en_US;
   const ids = Object.keys(en.champs).sort();
-  const champions = ids.map((id) => buildChampion(en.champs[id], meraki[id]));
+  const champions = ids.map((id) => buildChampion(en.champs[id], meraki[id], rates[en.champs[id].key]));
   const items = buildItems(en.items);
   const runes = buildRunes(en.runes);
   const summoners = buildSummoners(en.summoners);

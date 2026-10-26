@@ -27,7 +27,9 @@ function classOf(c, role) {
   const ap = c.damageType === 'AP';
   if (has(c, ['MARKSMAN']) && !ap) return 'marksman';
   if (has(c, ['ENCHANTER'])) return 'enchanter';
-  const tanky = has(c, ['VANGUARD', 'WARDEN']) || (has(c, ['TANK']) && c.ratings.damage <= 2);
+  // Fighters tagged TANK (Xin Zhao, Warwick, Garen, Sett…) are bruisers; only pure tanks count here.
+  const tanky = has(c, ['VANGUARD', 'WARDEN'])
+    || (has(c, ['TANK']) && c.ratings.damage <= 2 && !has(c, ['FIGHTER', 'DIVER', 'JUGGERNAUT', 'SKIRMISHER']));
   if (tanky) return role === 'SUPPORT' ? 'support-tank' : 'tank';
   if (has(c, ['CATCHER'])) return ap ? 'support-tank' : 'assassin-ad';
   if (has(c, ['ASSASSIN']) && !ap && (c.ratings.toughness <= 1 || !has(c, ['FIGHTER', 'DIVER', 'JUGGERNAUT']))) return 'assassin-ad';
@@ -55,6 +57,25 @@ function analyzeThreats(laner, enemies) {
     shields: count((e) => e.traits.shield >= 2),
     empty: !list.length,
   };
+}
+
+// Proven core items per class, best first. Stat value alone misses what passives give
+// (Trinity Force's Spellblade, Sterak's Gage's lifeline), so these get a bonus.
+const CLASS_CORE = {
+  bruiser: ['Trinity Force', 'Sundered Sky', 'Black Cleaver', "Sterak's Gage", "Death's Dance", 'Spear of Shojin', 'Eclipse', 'Hullbreaker', 'Titanic Hydra', 'Ravenous Hydra'],
+  marksman: ['Infinity Edge', 'Kraken Slayer', 'Yun Tal Wildarrows', 'The Collector', 'Phantom Dancer', "Lord Dominik's Regards", 'Bloodthirster', "Runaan's Hurricane", 'Statikk Shiv', 'Navori Flickerblade'],
+  'assassin-ad': ["Youmuu's Ghostblade", 'Profane Hydra', 'Voltaic Cyclosword', 'Edge of Night', "Serylda's Grudge", 'Axiom Arc', 'Hubris', 'The Collector', 'Eclipse'],
+  'mage-burst': ['Stormsurge', 'Shadowflame', 'Malignance', "Rabadon's Deathcap", 'Void Staff', "Zhonya's Hourglass", 'Lich Bane', 'Blackfire Torch'],
+  'mage-battle': ["Liandry's Torment", "Rylai's Crystal Scepter", 'Malignance', 'Cosmic Drive', "Rabadon's Deathcap", 'Void Staff', "Zhonya's Hourglass", 'Blackfire Torch'],
+  'mage-artillery': ['Malignance', 'Blackfire Torch', 'Shadowflame', "Rabadon's Deathcap", 'Void Staff', "Liandry's Torment"],
+  'ap-bruiser': ['Riftmaker', "Liandry's Torment", 'Hextech Rocketbelt', 'Cosmic Drive', "Nashor's Tooth", "Zhonya's Hourglass", "Rabadon's Deathcap"],
+  tank: ['Heartsteel', 'Sunfire Aegis', "Jak'Sho, The Protean", 'Hollow Radiance', 'Unending Despair', "Randuin's Omen", 'Kaenic Rookern', 'Force of Nature', "Warmog's Armor", "Dead Man's Plate"],
+};
+
+function coreBonus(item, cls) {
+  const list = CLASS_CORE[cls];
+  const i = list ? list.indexOf(item.nameEn) : -1;
+  return i < 0 ? 0 : 1.6 - i * 0.08;
 }
 
 function baseScore(item, w, champ) {
@@ -100,6 +121,7 @@ function lateItem(item) {
 function conflicts(item, chosen) {
   const p = new Set(item.features.passives.filter((x) => x !== 'ACTIVE'));
   return chosen.some((c) => c.features.passives.some((x) => p.has(x))
+    || (c.features.flags.grievous && item.features.flags.grievous)
     || (c.features.flags.stasis && item.features.flags.stasis)
     || (c.features.flags.lifeline && item.features.flags.lifeline));
 }
@@ -146,7 +168,7 @@ function recommendBuild(db, { championId, enemyId, enemyIds = [], role, enemyIte
   const scored = pool.map((item) => {
     const base = baseScore(item, w, champ);
     const sit = situational(item, cls, t);
-    return { item, base: base.score, top: base.top, sit, sitScore: sit.reduce((s, r) => s + r.v, 0) };
+    return { item, base: base.score + coreBonus(item, cls), top: base.top, sit, sitScore: sit.reduce((s, r) => s + r.v, 0) };
   });
 
   // Items already bought in game stay in the build (ranked first) and are never replaced.
@@ -160,14 +182,15 @@ function recommendBuild(db, { championId, enemyId, enemyIds = [], role, enemyIte
   const taken = core.map((c) => c.item);
   for (const s of scored) if (owned.has(s.item.id) && !taken.includes(s.item)) taken.push(s.item);
   const situ = [];
-  for (const s of [...scored].filter((x) => x.sitScore > 0 && x.base > 0.6).sort((a, b) => (b.sitScore + b.base * 0.4) - (a.sitScore + a.base * 0.4))) {
+  // Crit items only for marksmen (no Yun Tal on Garen).
+  for (const s of [...scored].filter((x) => x.sitScore > 0 && x.base > 0.6 && (cls === 'marksman' || !('crit' in x.item.features.stats))).sort((a, b) => (b.sitScore + b.base * 0.4) - (a.sitScore + a.base * 0.4))) {
     if (situ.length >= 5) break;
     if (!taken.includes(s.item) && !conflicts(s.item, [...taken, ...situ.map((x) => x.item)])) situ.push(s);
   }
-  const fill = [...scored].sort((a, b) => b.base - a.base)
-    .filter((s) => !taken.includes(s.item) && !situ.includes(s));
+  const fill = [...scored].sort((a, b) => (b.base + b.sitScore * 0.3) - (a.base + a.sitScore * 0.3))
+    .filter((s) => !taken.includes(s.item));
   const full = [...taken];
-  for (const s of [...situ, ...fill]) {
+  for (const s of fill) {
     if (full.length >= 5) break;
     if (!conflicts(s.item, full)) full.push(s.item);
   }

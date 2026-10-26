@@ -42,7 +42,11 @@ function opponentOf(model) {
   const override = state.manual.opponent;
   if (override && model.enemies.some((e) => e.championId === override)) return override;
   const e = model.enemies.find((x) => x.championId && x.role === model.myRole);
-  return e ? e.championId : null;
+  if (!e) return null;
+  // While enemies are still picking, an off-role guess (Teemo jungle) is not shown as the opponent.
+  const rates = champ(e.championId) && champ(e.championId).positionRates;
+  const complete = model.enemies.filter((x) => x.championId).length === 5;
+  return complete || !rates || rates[model.myRole] > 0 ? e.championId : null;
 }
 
 function slot(member, { enemy, opponent, onClick, onOpponent }) {

@@ -12,7 +12,8 @@ const { recommendBuild } = require('./engine/builds');
 const { inferRoles } = require('./engine/roles');
 const { LcuWatcher } = require('./lcu/watcher');
 const { exportItemSet } = require('./lcu/itemsets');
-const { exportRunePage, exportSummonerSpells } = require('./lcu/perks');
+const { exportRunePage, exportSummonerSpells, recommendedPages } = require('./lcu/perks');
+const { closestPage } = require('./engine/loadout');
 const { LiveClient } = require('./lcu/liveclient');
 const { setupAppUpdater } = require('./app-updater');
 const { Overlay } = require('./overlay');
@@ -86,6 +87,22 @@ function createWindow() {
   win.loadURL('app://ui/index.html');
 }
 
+// With the client connected, the rune page is picked from the pages the client recommends
+// for the champion, so it is one the player is also offered in champion select.
+const pageCache = new Map();
+async function withClientRunes(build) {
+  if (!watcher.status.connected || !build.runes) return build;
+  const champ = db.byId[build.championId];
+  const key = `${champ.key}:${build.role}`;
+  try {
+    if (!pageCache.has(key)) pageCache.set(key, await recommendedPages(watcher.lcu, champ.key, build.role));
+  } catch { return build; }
+  const page = closestPage(pageCache.get(key), build.runes);
+  if (!page) return build;
+  const { spells, ...runes } = page;
+  return { ...build, runes: { ...runes, reasons: ['loadout.riotPage'] } };
+}
+
 function registerIpc() {
   ipcMain.handle('app:init', () => ({
     settings: settings.get(),
@@ -126,7 +143,7 @@ function registerIpc() {
     mastery: watcher.mastery,
     pickableIds: opts.useClient ? watcher.pickable : null,
   }));
-  ipcMain.handle('engine:build', (_e, opts) => recommendBuild(db, opts));
+  ipcMain.handle('engine:build', async (_e, opts) => withClientRunes(recommendBuild(db, opts)));
   ipcMain.handle('engine:matchups', (_e, id) => championMatchups(db, id, settings.get('counterOverrides')));
   ipcMain.handle('engine:inferRoles', (_e, picks) => inferRoles(db, picks));
 

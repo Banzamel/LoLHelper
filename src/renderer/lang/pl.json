@@ -363,5 +363,6 @@
   "live.startersHint": "Kup na początku meczu",
   "live.startersCost": "Razem {n} szt. złota",
   "rank.previous": "poprz. sezon: {rank}",
-  "rank.previousHint": "Brak gier rankingowych w tym sezonie — ranga z końca poprzedniego sezonu."
+  "rank.previousHint": "Brak gier rankingowych w tym sezonie — ranga z końca poprzedniego sezonu.",
+  "loadout.riotPage": "Strona z rekomendacji Riotu (z tych w kliencie) najlepiej pasująca do meczu"
 }

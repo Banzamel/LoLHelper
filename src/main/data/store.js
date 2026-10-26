@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Bump when the database layout changes; older databases are then ignored (re-download needed).
-const SCHEMA = 2;
+const SCHEMA = 3;
 
 function readMeta(dir) {
   try { return JSON.parse(fs.readFileSync(path.join(dir, 'meta.json'), 'utf8')); } catch { return null; }
