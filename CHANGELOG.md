@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-26
+
 ### Added
 - **Player ranks in the Match view**: tier, division, LP and season winrate of all 10 players (Flex rank in
   Flex games, Solo/Duo otherwise), read from the League client. The widget shows the lane opponent's rank.
@@ -81,7 +83,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Banzamel/LoLHelper/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/Banzamel/LoLHelper/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Banzamel/LoLHelper/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Banzamel/LoLHelper/compare/v0.1.0...v0.2.0
