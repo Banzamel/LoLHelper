@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-26
+
 ### Added
 - **Fed enemies count more**: during a match each enemy is weighted by their score and the gold in their items,
   so boots, defensive and situational items follow who is actually dangerous (e.g. Mercury's Treads and Maw of
@@ -136,7 +138,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/Banzamel/LoLHelper/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/Banzamel/LoLHelper/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Banzamel/LoLHelper/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Banzamel/LoLHelper/compare/v0.4.0...v0.5.0
