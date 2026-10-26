@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-10-26
+
 ### Fixed
 - Buy order: every item is a column of the same width, so items and their parts line up instead of drifting
   apart (Match view, Build view); the hint above it no longer touches the numbers.
@@ -175,7 +177,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/Banzamel/LoLHelper/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/Banzamel/LoLHelper/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/Banzamel/LoLHelper/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/Banzamel/LoLHelper/compare/v0.7.0...v0.8.0
