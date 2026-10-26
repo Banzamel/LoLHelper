@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-26
+
 ### Fixed
 - App update installs silently and restarts the app; before, "Restart and install" opened the installer
   wizard and waited for clicks. (Updating from 0.3.0 still shows the wizard once — click through it.)
@@ -67,7 +69,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/Banzamel/LoLHelper/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Banzamel/LoLHelper/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Banzamel/LoLHelper/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Banzamel/LoLHelper/releases/tag/v0.1.0
