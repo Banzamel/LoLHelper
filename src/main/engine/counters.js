@@ -2,6 +2,7 @@
 // matchup knowledge, archetype matchups and ability traits (range, CC, mobility,
 // %HP damage...), then team composition and the player's own champion pool.
 // Reasons are returned as translation keys ({ delta, key, params }) for the UI.
+const { counterNudge } = require('./history');
 const { COUNTERS, ARCH_BEATS } = require('./knowledge');
 
 const LANE_ROLES = new Set(['TOP', 'MIDDLE']);
@@ -105,7 +106,7 @@ function blindScore(me, overrides) {
 }
 
 function suggestCounters(db, opts) {
-  const { role, enemyId, allyIds = [], enemyIds = [], excludeIds = [], pickableIds, pool, mastery, overrides = {}, limit = 15 } = opts;
+  const { role, enemyId, allyIds = [], enemyIds = [], excludeIds = [], pickableIds, pool, mastery, overrides = {}, history = null, limit = 15 } = opts;
   const enemy = enemyId ? db.byId[enemyId] : null;
   const allies = allyIds.map((id) => db.byId[id]).filter(Boolean);
   const others = enemyIds.filter((id) => id !== enemyId).map((id) => db.byId[id]).filter(Boolean);
@@ -118,7 +119,9 @@ function suggestCounters(db, opts) {
     if (pickable && !pickable.has(c.key)) continue;
     if (role && !c.positions.includes(role)) continue;
     const base = enemy ? matchup(c, enemy, role, overrides) : blindScore(c, overrides);
-    const extra = [...teamComposition(c, allies), ...enemyTeamFit(c, others, overrides), ...poolBonus(c, role, pool, mastery)];
+    const nudge = counterNudge(history, c.id, enemyId);
+    const mine = nudge && nudge.delta ? [{ delta: nudge.delta, key: 'counter.history', params: { wins: nudge.record.wins, games: nudge.record.games } }] : [];
+    const extra = [...teamComposition(c, allies), ...enemyTeamFit(c, others, overrides), ...poolBonus(c, role, pool, mastery), ...mine];
     const score = Math.max(0, Math.min(100, base.score + sum(extra)));
     results.push({ id: c.id, score, reasons: [...base.reasons, ...extra].sort((a, b) => b.delta - a.delta) });
   }

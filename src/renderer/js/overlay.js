@@ -35,8 +35,10 @@ async function draw() {
   }
   const { opp, owned, build, fullIds } = await buildForGame(game);
   const ownedSet = new Set(owned);
-  const it = item(build.next);
-  const missing = it ? it.gold.total - game.me.gold : 0;
+  const next = build.next;
+  const it = next && item(next.id);
+  const missing = it ? next.cost - game.me.gold : 0;
+  const buy = next && next.buy && next.buy.id !== next.id ? item(next.buy.id) : null;
   const oppItems = opp ? bought(opp.items) : [];
 
   const starting = needsStarters(game);
@@ -46,7 +48,7 @@ async function draw() {
       el('div', {}, el('div', { class: 'gold-text w-next-cost' }, t('common.gold', { n: startCost }))))
     : null;
   // Pulse once when the next purchase becomes affordable, so it catches the eye mid-fight.
-  const canAfford = starting ? startCost <= game.me.gold : !!it && missing <= 0;
+  const canAfford = starting ? startCost <= game.me.gold : !!it && (missing <= 0 || !!buy);
   if (canAfford && !couldAfford) {
     widget.classList.remove('pulse');
     void widget.offsetWidth;
@@ -57,9 +59,11 @@ async function draw() {
     el('div', { class: 'w-head' }, el('span', {}, t(starting ? 'live.starters' : 'live.nextItem')), el('div', { class: 'spacer' }),
       el('span', { class: 'gold-text' }, t('common.gold', { n: game.me.gold }))),
     nextBlock || (it ? el('div', { class: `w-next ${missing <= 0 ? 'afford' : ''}` }, itemIcon(it.id),
-      el('div', {}, el('div', { class: 'w-next-name' }, it.name), el('div', { class: 'gold-text w-next-cost' }, t('common.gold', { n: it.gold.total })),
+      el('div', {}, el('div', { class: 'w-next-name' }, it.name), el('div', { class: 'gold-text w-next-cost' }, t('live.remaining', { n: next.cost })),
         el('span', { class: `chip ${missing <= 0 ? 'plus' : ''}` }, missing <= 0 ? t('overlay.canAfford') : t('live.missingGold', { n: missing }))))
       : el('div', { class: 'w-muted' }, t('live.buildDone'))),
+    !starting && buy ? el('div', { class: 'w-buy' }, el('span', {}, t('live.buyNow')), itemIcon(buy.id), el('strong', {}, buy.name),
+      el('span', { class: 'gold-text' }, String(next.buy.cost))) : '',
     el('div', { class: 'w-strip' }, fullIds.map((id) => el('div', { class: ownedSet.has(id) ? 'owned' : '' }, itemIcon(id)))),
     skillRow(build, game.me.level, game.me.championId) || '',
     opp ? el('div', { class: 'w-opp' }, champIcon(opp.championId, { size: 'xs' }), el('span', {}, champ(opp.championId) ? champ(opp.championId).name : ''),

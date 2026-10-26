@@ -2,7 +2,7 @@
 // with an export to the in-game shop as an item set.
 import { t } from '../js/i18n.js';
 import { state, champ, item } from '../js/store.js';
-import { el, champIcon, itemIcon, roleIcon, ROLES, pickChampion, toast } from '../js/ui.js';
+import { el, champIcon, itemIcon, roleIcon, ROLES, pickChampion, toast, buildOrder } from '../js/ui.js';
 import { loadoutPanels } from './loadout.js';
 
 function itemRow(entry) {
@@ -73,8 +73,9 @@ export async function renderBuild(root) {
   root.append(
     build.threats.length ? el('div', { class: 'threats' }, el('span', { class: 'muted' }, t('build.threats')),
       build.threats.map((x) => el('span', { class: 'chip minus' }, t(x.key, x.params)))) : '',
-    el('div', { class: 'build-full panel gold' }, el('h2', {}, t('build.full')),
-      el('div', { class: 'build-strip' }, [...build.full.slice(0, 5), build.boots && build.boots.id].filter(Boolean).map((id) => itemIcon(id, { size: 'lg' })))),
+    el('div', { class: 'build-full panel gold' }, el('h2', {}, t('build.order')),
+      el('p', { class: 'muted small' }, t('build.orderHint')),
+      buildOrder(build.order, { names: true })),
     loadoutPanels(build),
     el('div', { class: 'build-grid' },
       section(t('build.start'), el('div', { class: 'build-strip' }, build.starters.map((s) => itemIcon(s.id, { count: s.count })))),

@@ -9,12 +9,13 @@ import { renderChampion } from '../views/champion.js';
 import { renderItems } from '../views/items.js';
 import { renderSettings } from '../views/settings.js';
 import { renderLive } from '../views/live.js';
+import { renderHistory } from '../views/history.js';
 import { renderUpdateBanner } from './update.js';
 
 const VIEWS = {
-  draft: renderDraft, build: renderBuild, champions: renderChampions, champion: renderChampion, items: renderItems, settings: renderSettings, live: renderLive,
+  draft: renderDraft, build: renderBuild, champions: renderChampions, champion: renderChampion, items: renderItems, settings: renderSettings, live: renderLive, history: renderHistory,
 };
-const NAV = ['draft', 'live', 'build', 'champions', 'items', 'settings'];
+const NAV = ['draft', 'live', 'history', 'build', 'champions', 'items', 'settings'];
 let current = { name: 'draft', params: {} };
 
 export function navigate(name, params = {}) {
@@ -74,6 +75,7 @@ async function boot() {
   state.draft = init.draft;
   state.game = init.game;
   state.appUpdate = init.update;
+  state.history = await window.api.listHistory();
   setChampionResolver((id) => (champ(id) ? champ(id).name : id));
   document.querySelectorAll('[data-win]').forEach((b) => b.addEventListener('click', () => window.api.window(b.dataset.win)));
 
@@ -84,6 +86,7 @@ async function boot() {
     if (p === 'ChampSelect' && isSupported() && state.settings.autoOpenDraft && current.name !== 'draft') navigate('draft');
   });
   window.api.onGameMode((m) => { state.mode = m; renderStatus(); emit('mode'); });
+  window.api.onHistory((h) => { state.history = h; emit('history'); });
   window.api.onDraft((d) => { state.draft = d; renderStatus(); emit('draft'); });
   window.api.onGame((g) => {
     const started = !(state.game && state.game.me) && g && g.me;

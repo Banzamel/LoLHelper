@@ -28,6 +28,7 @@ const ICONS = {
   live: '<path fill="none" stroke="currentColor" stroke-width="1.6" d="M4 20L14 10M14 10l2-6 4 4-6 2M6 14l4 4M3 21l2-2"/><circle cx="18" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/>',
   build: '<path fill="none" stroke="currentColor" stroke-width="1.6" d="M12 3l8 4v6c0 4-3.5 7-8 8-4.5-1-8-4-8-8V7z M9 12l2 2 4-4"/>',
   champions: '<circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+  history: '<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M12 7v5l3 2"/>',
   items: '<path fill="none" stroke="currentColor" stroke-width="1.6" d="M5 8h14l-1.5 12h-11zM9 8V6a3 3 0 016 0v2"/>',
   settings: '<circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
 };
@@ -67,6 +68,22 @@ export function champIcon(id, { size = '', round = false, banned = false, onClic
   const node = el('div', { class: cls, title: title || (c ? c.name : null), onClick }, c ? el('img', { src: asset(c.icon), alt: c.name, loading: 'lazy' }) : '+');
   if (onClick) node.style.cursor = 'pointer';
   return node;
+}
+
+// Items in buy order, numbered, each with its direct parts below (what to buy towards it).
+// owned: item ids the player has (finished items and parts are ticked).
+export function buildOrder(ids, { owned = [], names = false } = {}) {
+  const have = new Set(owned);
+  return el('div', { class: 'buy-order' }, ids.map((id, i) => {
+    const it = item(id);
+    if (!it) return null;
+    return el('div', { class: `buy-step ${have.has(id) ? 'owned' : ''}` },
+      el('div', { class: 'buy-main' }, el('span', { class: 'buy-n' }, String(i + 1)), itemIcon(id, { size: names ? 'lg' : '' })),
+      names ? el('div', { class: 'buy-name' }, it.name, el('span', { class: 'gold-text' }, ` ${it.gold.total}`)) : null,
+      (it.from || []).length && !have.has(id)
+        ? el('div', { class: 'buy-parts' }, it.from.map((c) => el('div', { class: have.has(c) ? 'owned' : '' }, itemIcon(c, { size: 'xs' }))))
+        : null);
+  }));
 }
 
 export function itemIcon(id, { size = '', count, onClick } = {}) {

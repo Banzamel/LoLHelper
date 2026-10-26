@@ -6,6 +6,7 @@ const path = require('path');
 const STEPS = [
   ['draft', "document.querySelector('[data-view=draft]').click()"],
   ['live', "document.querySelector('[data-view=live]').click()"],
+  ['history', "document.querySelector('[data-view=history]').click(); setTimeout(() => document.querySelector('.hist-main').click(), 300)"],
   ['build', "document.querySelector('[data-view=build]').click()"],
   ['champions', "document.querySelector('[data-view=champions]').click()"],
   ['champion', "document.querySelector('.champ-card').click()"],

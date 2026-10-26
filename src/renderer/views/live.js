@@ -3,8 +3,9 @@
 // enemies bought and the next item to buy.
 import { t } from '../js/i18n.js';
 import { state, champ, item, subscribe, isSupported } from '../js/store.js';
-import { el, champIcon, itemIcon, roleIcon, rankBadge, runeIcon, summonerIcon } from '../js/ui.js';
+import { el, champIcon, itemIcon, roleIcon, rankBadge, runeIcon, summonerIcon, buildOrder } from '../js/ui.js';
 import { loadoutPanels, skillsPanel } from './loadout.js';
+import { recordChip } from './history.js';
 import { bought, buildForGame, needsStarters, startersCost } from '../js/game.js';
 
 const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -33,14 +34,21 @@ function startersCard(build, gold) {
     cost > gold ? el('span', { class: 'chip' }, t('live.missingGold', { n: cost - gold })) : null);
 }
 
+// The next item, what to buy for it right now (the item itself or its biggest affordable
+// part) and its parts, owned ones ticked.
 function nextItemCard(build, gold) {
-  const it = item(build.next);
+  const next = build.next;
+  const it = next && item(next.id);
   if (!it) return el('div', { class: 'panel next-item' }, el('h2', {}, t('live.nextItem')), el('p', { class: 'muted' }, t('live.buildDone')));
-  const missing = it.gold.total - gold;
+  const missing = next.cost - gold;
+  const buy = next.buy && next.buy.id !== it.id ? item(next.buy.id) : null;
   return el('div', { class: 'panel gold next-item' }, el('h2', {}, t('live.nextItem')),
     el('div', { class: 'next-body' }, itemIcon(it.id, { size: 'lg' }),
-      el('div', {}, el('h3', {}, it.name), el('div', { class: 'gold-text' }, t('common.gold', { n: it.gold.total })),
-        el('span', { class: `chip ${missing <= 0 ? 'plus' : ''}` }, missing <= 0 ? t('live.canAfford') : t('live.missingGold', { n: missing })))));
+      el('div', {}, el('h3', {}, it.name), el('div', { class: 'gold-text' }, t('live.remaining', { n: next.cost })),
+        el('span', { class: `chip ${missing <= 0 ? 'plus' : ''}` }, missing <= 0 ? t('live.canAfford') : t('live.missingGold', { n: missing })))),
+    next.parts.length ? el('div', { class: 'next-parts' }, next.parts.map((p) => el('div', { class: `next-part ${p.owned ? 'owned' : ''}` }, itemIcon(p.id, { size: 'sm' })))) : null,
+    buy ? el('div', { class: 'buy-now' }, el('span', { class: 'muted' }, t('live.buyNow')), itemIcon(buy.id, { size: 'sm' }),
+      el('strong', {}, buy.name), el('span', { class: 'gold-text' }, ` ${next.buy.cost}`)) : null);
 }
 
 async function draw(container, game) {
@@ -63,9 +71,10 @@ async function draw(container, game) {
       el('div', { class: 'panel live-me' },
         el('div', { class: 'live-me-head' }, champIcon(game.me.championId, { size: 'lg' }),
           el('div', {}, el('h2', {}, me ? me.name : game.me.championId), el('div', { class: 'role-badge' }, roleIcon(role), t(`role.${role}`)),
-            opp ? el('div', { class: 'muted' }, `${t('draft.laneOpponent')}: `, el('strong', { class: 'opp-name' }, champ(opp.championId) ? champ(opp.championId).name : '')) : null)),
+            opp ? el('div', { class: 'muted' }, `${t('draft.laneOpponent')}: `, el('strong', { class: 'opp-name' }, champ(opp.championId) ? champ(opp.championId).name : '')) : null,
+            recordChip(state.history, game.me.championId, opp ? opp.championId : null))),
         el('h3', { class: 'sub' }, t('live.recommended')),
-        el('div', { class: 'build-strip' }, fullIds.map((id) => el('div', { class: `owned-wrap ${ownedSet.has(id) ? 'owned' : ''}` }, itemIcon(id)))),
+        buildOrder(fullIds, { owned: game.me.items }),
         build.threats.length ? el('div', { class: 'chips live-threats' }, build.threats.map((x) => el('span', { class: 'chip minus' }, t(x.key, x.params)))) : null),
       needsStarters(game) ? startersCard(build, game.me.gold) : nextItemCard(build, game.me.gold)),
     skillsPanel(build, { level: game.me.level }),

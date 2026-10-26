@@ -136,3 +136,26 @@ h3.sub { margin: 14px 0 8px; color: var(--gold); font-size: 12px; text-transform
 .draft-setup { margin: 14px 0; }
 .draft-setup .panel-title { gap: 10px; }
 .draft-setup .loadout { margin: 10px 0 0; }
+
+/* History */
+.hist-champs { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.hist-champ { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-0); }
+.hist-champ strong { color: var(--gold-hi); }
+.hist-list { display: grid; gap: 6px; }
+.hist-row { border: 1px solid var(--line); border-left: 3px solid var(--muted); border-radius: var(--radius); background: var(--bg-0); }
+.hist-row.win { border-left-color: var(--green); }
+.hist-row.loss { border-left-color: var(--red); }
+.hist-main { display: grid; grid-template-columns: 80px 32px 220px 26px 64px 90px 60px 1fr 30px; gap: 10px; align-items: center; padding: 6px 10px; cursor: pointer; }
+.hist-result { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+.hist-row.win .hist-result { color: var(--green); }
+.hist-row.loss .hist-result { color: var(--red); }
+.hist-name { display: grid; line-height: 1.25; min-width: 0; }
+.hist-name strong { color: var(--gold-hi); }
+.hist-vs { display: flex; align-items: center; gap: 6px; }
+.hist-details { display: grid; gap: 6px; padding: 4px 10px 10px 102px; }
+.hist-details[hidden] { display: none; }
+.hist-timeline { display: flex; flex-wrap: wrap; gap: 8px; }
+.hist-buy { display: grid; justify-items: center; gap: 2px; font-size: 10px; }
+.hist-enemies { display: grid; gap: 4px; }
+.hist-enemy { display: flex; align-items: center; gap: 6px; }
+.hist-enemy svg { width: 14px; height: 14px; color: var(--muted); }

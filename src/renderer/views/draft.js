@@ -5,6 +5,7 @@ import { t } from '../js/i18n.js';
 import { state, champ, subscribe, isSupported } from '../js/store.js';
 import { el, champIcon, itemIcon, roleIcon, ROLES, scoreRing, reasonChip, pickChampion } from '../js/ui.js';
 import { loadoutPanels } from './loadout.js';
+import { recordChip } from './history.js';
 import { navigate } from '../js/app.js';
 
 let lastQuery = '';
@@ -107,7 +108,8 @@ async function loadSetup(model, opponent, championId) {
 function setupSection(build, model, me) {
   const current = model.live && state.draft ? { runes: state.draft.myRunes, spells: me.spells } : null;
   return el('section', { class: 'panel gold draft-setup' },
-    el('div', { class: 'panel-title' }, champIcon(build.championId, { size: 'sm' }), el('h2', {}, t('draft.setup')), el('div', { class: 'spacer' }),
+    el('div', { class: 'panel-title' }, champIcon(build.championId, { size: 'sm' }), el('h2', {}, t('draft.setup')),
+      recordChip(state.history, build.championId, build.enemyId), el('div', { class: 'spacer' }),
       el('span', { class: 'muted' }, t('build.start')),
       el('div', { class: 'build-strip' }, build.starters.map((s) => itemIcon(s.id, { size: 'sm', count: s.count })))),
     el('p', { class: 'muted small' }, t('draft.setupHint', { champion: champ(build.championId).name })),

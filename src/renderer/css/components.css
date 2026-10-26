@@ -116,3 +116,16 @@
 .tier-master { --tier: #c46cf0; }
 .tier-grandmaster { --tier: #ef5a4f; }
 .tier-challenger { --tier: #f6d77f; }
+
+/* Buy order with parts */
+.item-icon.xs { width: 22px; height: 22px; }
+.buy-order { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.buy-step { display: grid; justify-items: center; gap: 6px; max-width: 120px; }
+.buy-main { position: relative; }
+.buy-n { position: absolute; left: -7px; top: -7px; z-index: 1; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 10px; font-weight: 700; background: var(--bg-0); border: 1px solid var(--gold); color: var(--gold-hi); }
+.buy-name { font-size: 12px; text-align: center; color: var(--gold-hi); line-height: 1.25; }
+.buy-parts { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
+.buy-parts .owned .item-icon, .buy-step.owned .item-icon { border-color: var(--green); }
+.buy-step.owned .buy-main::after { content: "\2713"; position: absolute; right: -6px; top: -6px; width: 16px; height: 16px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 10px; background: var(--green); color: #fff; }

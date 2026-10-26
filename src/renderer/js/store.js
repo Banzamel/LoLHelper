@@ -10,6 +10,7 @@ export const state = {
   lcu: { connected: false },
   phase: 'None',
   mode: null,
+  history: [],
   draft: null,
   game: null,
   appUpdate: { state: 'idle' },

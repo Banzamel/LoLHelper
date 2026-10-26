@@ -7,6 +7,23 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Added
+- **Buy order with parts**: the Build view, the Match view and the widget list items in the order to buy them
+  (first item, boots, then the rest), each with its parts underneath; owned items and parts are ticked.
+- **"Buy now"**: in a match the next item shows the gold still needed (owned parts and rune boots count) and the
+  biggest part you can afford right now, e.g. Pickaxe towards Black Cleaver.
+- **Match history** (new History view): every finished match in a supported mode is saved with the result
+  (from the client's end-of-game stats), champion, role, lane opponent, both teams, purchase timeline, KDA and CS.
+  Per-champion summary, details per match, removing single matches or clearing the history.
+- **Learning from your matches**: items you won with in similar matches (same champion; same lane opponent and
+  shared enemies weigh more) gain value in the build, items from losses lose it ("You won with it in similar
+  matches (2/3)"); counter-picks get a nudge from your results with the champion. Draft and Match show your record
+  with the champion and against the lane opponent.
+
+### Changed
+- The whole build adapts during a match, not only boots: situational needs weigh more in the core items.
+- Development: `LOLHELPER_USERDATA=<dir>` keeps settings and history apart from the real ones.
+
 ## [0.8.1] - 2026-10-26
 
 ### Fixed

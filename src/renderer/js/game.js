@@ -31,10 +31,12 @@ export async function buildForGame(game) {
     role,
     enemyItems: Object.fromEntries(game.enemies.map((e) => [e.championId, bought(e.items)])),
     enemyStats: Object.fromEntries(game.enemies.map((e) => [e.championId, e.scores || {}])),
-    ownedItems: owned,
+    ownedItems: game.me.items,
+    gold: game.me.gold,
   });
-  const ownedBoots = owned.find((id) => item(id).tags.includes('Boots') && item(id).category !== 'component');
-  const fullIds = [ownedBoots || (build.boots && build.boots.id), ...build.full].filter(Boolean);
+  // Buy order with the boots the player already finished in place of the recommended pair.
+  const ownedBoots = owned.find((id) => ['boots', 'boots-upgrade'].includes(item(id).category));
+  const fullIds = build.order.map((id) => (build.boots && id === build.boots.id && ownedBoots ? ownedBoots : id));
   return { role, opp, owned, build, fullIds };
 }
 

@@ -17,6 +17,10 @@ const { closestPage } = require('./engine/loadout');
 const { LiveClient } = require('./lcu/liveclient');
 const { setupAppUpdater } = require('./app-updater');
 const { Overlay } = require('./overlay');
+const { History, MatchRecorder } = require('./history');
+
+// Development: LOLHELPER_USERDATA=<dir> keeps settings, history and data apart from the real ones.
+if (process.env.LOLHELPER_USERDATA) app.setPath('userData', process.env.LOLHELPER_USERDATA);
 
 const ROOT = path.join(__dirname, '..', '..');
 const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
@@ -31,7 +35,9 @@ let settings = null;
 const send = (channel, payload) => { if (win && !win.isDestroyed()) win.webContents.send(channel, payload); };
 let devRoster = null;
 const live = new LiveClient(() => db, () => devRoster || watcher.roster);
+const recorder = new MatchRecorder();
 live.on('game', (game) => {
+  if (game && game.me) recorder.update(game, watcher.mode);
   send('live:game', game);
   if (overlay) {
     overlay.send('live:game', game);
@@ -44,6 +50,7 @@ const watcher = new LcuWatcher({
   getDb: () => db,
   send,
   onPhase: (phase) => {
+    if (phase === 'EndOfGame' || (['None', 'Lobby'].includes(phase) && recorder.match)) finishMatch();
     if (process.env.LOLHELPER_LIVE) return; // development: polling is forced on, see below
     if (phase === 'InProgress' && watcher.supported) live.start();
     else live.stop();
@@ -51,6 +58,19 @@ const watcher = new LcuWatcher({
 });
 let updater = null;
 let overlay = null;
+let history = null;
+
+// Saves the finished match with its result (end-of-game stats, else the live GameEnd event).
+async function finishMatch() {
+  if (!recorder.match || !db) return;
+  const last = recorder.match.last;
+  let eog = null;
+  try { eog = await watcher.lcu.get('/lol-end-of-game/v1/eog-stats-block'); } catch { /* not available */ }
+  const me = last && last.me;
+  const role = (me && me.position) || (me && db.byId[me.championId] ? db.byId[me.championId].positions[0] : null);
+  const entry = recorder.finish(db, eog, role);
+  if (entry && history.add(entry)) send('history:updated', history.list());
+}
 
 function loadDb() {
   const dir = resolveDataDir(USER_DATA, BUNDLED_DATA);
@@ -141,9 +161,10 @@ function registerIpc() {
     pool: settings.get('pool'),
     overrides: settings.get('counterOverrides'),
     mastery: watcher.mastery,
+    history: history.list(),
     pickableIds: opts.useClient ? watcher.pickable : null,
   }));
-  ipcMain.handle('engine:build', async (_e, opts) => withClientRunes(recommendBuild(db, opts)));
+  ipcMain.handle('engine:build', async (_e, opts) => withClientRunes(recommendBuild(db, { ...opts, history: history.list() })));
   ipcMain.handle('engine:matchups', (_e, id) => championMatchups(db, id, settings.get('counterOverrides')));
   ipcMain.handle('engine:inferRoles', (_e, picks) => inferRoles(db, picks));
 
@@ -159,6 +180,10 @@ function registerIpc() {
   ipcMain.handle('overlay:toggleMove', () => { overlay.toggleMove(); return overlay.state(); });
   ipcMain.handle('overlay:apply', () => overlay.applySettings());
   ipcMain.handle('overlay:resize', (_e, height) => overlay.resize(height));
+
+  ipcMain.handle('history:list', () => history.list());
+  ipcMain.handle('history:remove', (_e, id) => { history.remove(id); return history.list(); });
+  ipcMain.handle('history:clear', () => { history.clear(); return history.list(); });
 
   ipcMain.handle('update:check', () => updater.check());
   ipcMain.handle('update:download', () => updater.download());
@@ -186,6 +211,7 @@ function registerIpc() {
 
 app.whenReady().then(() => {
   settings = new Settings(app.getPath('userData'));
+  history = new History(app.getPath('userData'));
   loadDb();
   protocol.handle('app', (request) => {
     const url = new URL(request.url);

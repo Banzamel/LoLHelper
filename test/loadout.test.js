@@ -47,7 +47,7 @@ test('in game: owned items stay, next purchase is not owned, enemy items shift t
   const owned = [3032, 3006];
   const live = recommendBuild(db, { ...base, ownedItems: owned, enemyItems: { Lux: [6655, 3089, 3157], Zed: [3089], Malphite: [3157] } });
   assert.ok(live.full.includes(3032));
-  assert.ok(live.next && !owned.includes(live.next));
+  assert.ok(live.next && !owned.includes(live.next.id));
   assert.ok(live.threats.some((x) => x.key === 'threat.fromItems'));
   const ap = (b) => b.threats.find((x) => x.key === 'threat.damageSplit').params.ap;
   assert.ok(ap(live) > ap(plain));
@@ -100,4 +100,21 @@ test('a fed enemy weighs more in the threat profile', () => {
   assert.ok(b.threats.some((x) => x.key === 'threat.fed' && x.params.enemy === 'Akali'));
   assert.strictEqual(db.itemById[b.boots.id].nameEn, "Mercury's Treads");
   assert.deepStrictEqual(threatWeights(db, null, enemyItems), {});
+});
+
+test('buy order puts boots second; the part to buy now fits the gold and uses owned parts', () => {
+  const { planItem, nextPurchase } = require('../src/main/engine/live');
+  const id = (n) => db.items.find((i) => i.nameEn === n).id;
+  const build = recommendBuild(db, { championId: 'XinZhao', role: 'JUNGLE' });
+  assert.strictEqual(build.order[1], build.boots.id);
+  // Black Cleaver with Phage owned: Kindlegem + Pickaxe + combine cost remain.
+  const plan = planItem(db, id('Black Cleaver'), [id('Phage')]);
+  assert.strictEqual(plan.cost, 3000 - 1100);
+  const fake = { full: [id('Black Cleaver')], boots: null };
+  const next = nextPurchase(db, fake, [id('Phage')], 886);
+  assert.strictEqual(next.id, id('Black Cleaver'));
+  assert.strictEqual(db.itemById[next.buy.id].nameEn, 'Pickaxe');
+  assert.deepStrictEqual(next.parts.map((p) => p.owned), [true, false, false]);
+  // Rune boots count as Boots: Steelcaps then costs 900.
+  assert.strictEqual(planItem(db, id('Plated Steelcaps'), [2422]).cost, 900);
 });

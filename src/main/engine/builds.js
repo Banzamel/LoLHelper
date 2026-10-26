@@ -2,7 +2,8 @@
 // champion's class weights, then adjusted for the enemy laner and enemy team threats
 // (damage type, healing, tanks, burst, crowd control, auto-attackers, shields).
 const { recommendLoadout } = require('./loadout');
-const { applyEnemyItems, nextPurchase, threatWeights, FED } = require('./live');
+const { itemLessons } = require('./history');
+const { applyEnemyItems, nextPurchase, purchaseOrder, threatWeights, FED } = require('./live');
 
 const GOLD = { ad: 35, ap: 20, armor: 20, mr: 18, hp: 2.67, as: 25, crit: 40, haste: 26.7, lethality: 30, armorPen: 40,
   magicPen: 46, magicPenFlat: 31, lifesteal: 37.5, omnivamp: 40, mana: 1.4, manaRegen: 3, hpRegen: 3, hsp: 66, tenacity: 10, msPct: 39 };
@@ -156,7 +157,7 @@ function pickBoots(db, cls, t) {
   return boots ? { id: boots.id, upgrade: boots.into[0] || null, reason } : null;
 }
 
-function recommendBuild(db, { championId, enemyId, enemyIds = [], role, enemyItems = null, enemyStats = null, ownedItems = null }) {
+function recommendBuild(db, { championId, enemyId, enemyIds = [], role, enemyItems = null, enemyStats = null, ownedItems = null, gold = null, history = null }) {
   const champ = db.byId[championId];
   if (!champ) throw new Error(`Unknown champion ${championId}`);
   const laner = enemyId ? db.byId[enemyId] : null;
@@ -168,15 +169,24 @@ function recommendBuild(db, { championId, enemyId, enemyIds = [], role, enemyIte
   const pool = db.items.filter((i) => i.category === 'legendary');
   const owned = new Set((ownedItems || []).filter((id) => db.itemById[id] && db.itemById[id].category === 'legendary'));
 
+  // The player's own results with this champion in similar matches nudge item values.
+  const lessons = itemLessons(history, { championId, enemyId, enemyIds });
   const scored = pool.map((item) => {
     const base = baseScore(item, w, champ);
     const sit = situational(item, cls, t);
-    return { item, base: base.score + coreBonus(item, cls), top: base.top, sit, sitScore: sit.reduce((s, r) => s + r.v, 0) };
+    const lesson = lessons[item.id];
+    const learned = lesson && Math.abs(lesson.bonus) >= 0.1 ? [{ key: lesson.bonus > 0 ? 'build.historyWin' : 'build.historyLoss', params: { wins: lesson.wins, games: lesson.games } }] : [];
+    return {
+      item, base: base.score + coreBonus(item, cls) + (lesson ? lesson.bonus : 0), top: base.top, sit, learned,
+      sitScore: sit.reduce((s, r) => s + r.v, 0),
+    };
   });
 
   // Items already bought in game stay in the build (ranked first) and are never replaced.
+  // In a running match the situation weighs more, so the core adapts too (not only boots).
+  const coreSit = t.live ? 0.6 : 0.15;
   const core = scored.filter((s) => owned.has(s.item.id)).slice(0, 3);
-  for (const s of [...scored].sort((a, b) => (b.base + b.sitScore * 0.15) - (a.base + a.sitScore * 0.15))) {
+  for (const s of [...scored].sort((a, b) => (b.base + b.sitScore * coreSit) - (a.base + a.sitScore * coreSit))) {
     if (core.length >= 3) break;
     if (!core.includes(s) && !conflicts(s.item, core.map((c) => c.item))) core.push(s);
   }
@@ -216,12 +226,13 @@ function recommendBuild(db, { championId, enemyId, enemyIds = [], role, enemyIte
     championId, enemyId: enemyId || null, role: role || champ.positions[0], cls, threats,
     starters: pickStarters(db, cls, role, laner),
     boots: pickBoots(db, cls, t),
-    core: core.map((c) => ({ id: c.item.id, stats: c.top, owned: owned.has(c.item.id), reasons: c.sit.map((r) => ({ key: r.key })) })),
-    situational: situ.map((s) => ({ id: s.item.id, reasons: s.sit.map((r) => ({ key: r.key })) })),
+    core: core.map((c) => ({ id: c.item.id, stats: c.top, owned: owned.has(c.item.id), reasons: [...c.sit.map((r) => ({ key: r.key })), ...c.learned] })),
+    situational: situ.map((s) => ({ id: s.item.id, reasons: [...s.sit.map((r) => ({ key: r.key })), ...s.learned] })),
     full: full.slice(0, 5).map((i) => i.id),
     ...recommendLoadout(db, { champ, cls, role: role || champ.positions[0], laner, threats: t }),
   };
-  if (ownedItems) build.next = nextPurchase(db, build, ownedItems);
+  build.order = purchaseOrder(build);
+  if (ownedItems) build.next = nextPurchase(db, build, ownedItems, gold);
   return build;
 }
 

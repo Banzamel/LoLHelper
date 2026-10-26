@@ -76,7 +76,9 @@ function normalize(data, db, roster = null) {
   const me = players.find((p) => p.name === meName) || null;
   const allies = me ? players.filter((p) => p.team === me.team) : [];
   const enemies = me ? players.filter((p) => p.team !== me.team) : players;
+  const end = ((data.events && data.events.Events) || []).find((e) => e.EventName === 'GameEnd');
   return {
+    result: end ? end.Result : null,
     gameTime: data.gameData ? data.gameData.gameTime : 0,
     gameMode: data.gameData ? data.gameData.gameMode : null,
     me: me && { ...me, gold: Math.floor(data.activePlayer.currentGold || 0), runes: runePageOf(data.activePlayer.fullRunes) },

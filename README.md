@@ -46,6 +46,10 @@ Swiftplay and Quickplay. ARAM, Blind Pick, rotating modes and custom games are s
   summoner spells by role and an ability max order with a level 1–18 table.
 - **Export runes** (saved and selected in the client) and **set summoner spells** during champion select.
 
+### Match history
+- Every finished match is saved with its result, purchase timeline and both teams (History view).
+- The build learns from it: items you won with in similar matches gain value, items from losses lose it.
+
 ### Live match
 - While the game runs, the app reads the Live Client Data API: both teams with Riot IDs, levels, KDA, CS and items.
 - Roles picked in draft and every player's **rank** (tier, division, LP, season winrate — Flex in Flex games,
@@ -84,7 +88,8 @@ npm run dist         # build the installer -> dist/LoLHelper-Setup-<version>.exe
 
 Development switches: `LOLHELPER_LIVE=1` polls the Live Client Data API without waiting for the client's
 game phase (useful with a mock server on `https://127.0.0.1:2999`) and ignores the client's game phase; `LOLHELPER_ROSTER=<file.json>` supplies
-the match roster (roles, ranks) without a League client.
+the match roster (roles, ranks) without a League client; `LOLHELPER_USERDATA=<dir>` keeps settings and match
+history apart from the real ones.
 
 ### Project layout
 | Path | Contents |
