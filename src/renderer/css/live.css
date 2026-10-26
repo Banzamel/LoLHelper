@@ -52,10 +52,13 @@ body { display: flex; flex-direction: column; }
 .next-body .chip { margin-top: 6px; }
 .live-team { margin-bottom: 14px; }
 .enemy-title { color: var(--red); margin-bottom: 10px; }
-.live-row { display: grid; grid-template-columns: 22px 32px 170px 90px 70px 1fr; gap: 10px; align-items: center; padding: 6px 8px; border: 1px solid transparent; border-radius: var(--radius); }
+.live-row { display: grid; grid-template-columns: 22px 32px 190px 210px 80px 64px 1fr; gap: 10px; align-items: center; padding: 6px 8px; border: 1px solid transparent; border-radius: var(--radius); }
 .live-row.opponent { border-color: rgba(232, 64, 87, 0.55); background: linear-gradient(90deg, rgba(232, 64, 87, 0.12), transparent); }
+.live-row.me { border-color: rgba(10, 200, 185, 0.45); background: linear-gradient(90deg, rgba(10, 200, 185, 0.1), transparent); }
 .live-row.dead { opacity: 0.5; }
-.live-name { display: grid; line-height: 1.2; }
+.ally-title { color: var(--teal); margin-bottom: 10px; }
+.live-name { display: grid; line-height: 1.2; min-width: 0; }
+.live-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .live-name strong { color: var(--gold-hi); }
 .live-kda { color: var(--gold-hi); font-variant-numeric: tabular-nums; }
 .live-items { gap: 4px; }

@@ -1,7 +1,7 @@
 // Draft view: both teams (live from champion select or set manually), the lane opponent
 // and counter-pick recommendations for the player's role.
 import { t } from '../js/i18n.js';
-import { state, champ, subscribe } from '../js/store.js';
+import { state, champ, subscribe, isSupported } from '../js/store.js';
 import { el, champIcon, roleIcon, ROLES, scoreRing, reasonChip, pickChampion } from '../js/ui.js';
 import { navigate } from '../js/app.js';
 
@@ -97,7 +97,7 @@ export function renderDraft(root) {
     busy = true;
     try { await drawInto(container); } finally { busy = false; }
   };
-  const unsub = subscribe((what) => { if (!container.isConnected) { unsub(); return; } if (what === 'draft' || what === 'lcu') draw(); });
+  const unsub = subscribe((what) => { if (!container.isConnected) { unsub(); return; } if (what === 'draft' || what === 'lcu' || what === 'mode') draw(); });
   draw();
 }
 
@@ -135,6 +135,8 @@ async function drawInto(container) {
     !model.live ? el('button', { class: 'btn small ghost', onClick: () => { Object.assign(state.manual, { myTeam: Array(5).fill(null), theirTeam: Array(5).fill(null), opponent: null }); redraw(); } }, t('draft.reset')) : null);
 
   const bans = model.bans.length ? el('div', { class: 'bans' }, el('span', { class: 'muted' }, t('draft.bans')), model.bans.map((id) => champIcon(id, { size: 'xs', banned: true }))) : null;
+  const unsupported = !isSupported() && state.phase !== 'None'
+    ? el('div', { class: 'panel mode-notice' }, el('strong', {}, t('mode.unsupported')), el('span', { class: 'muted' }, t('mode.unsupportedHint'))) : null;
   const hint = !model.live ? el('p', { class: 'muted draft-hint' }, t('draft.manualHint')) : null;
 
   const opp = champ(opponent);
@@ -151,5 +153,5 @@ async function drawInto(container) {
   const enemies = el('section', { class: 'panel team enemies' }, el('h2', {}, t('draft.enemies')),
     model.enemies.map((m, i) => slot(m, { enemy: true, opponent, onClick: model.live ? null : () => setEnemy(i), onOpponent: () => setOpponent(m) })));
 
-  container.replaceChildren(head, hint || '', bans || '', el('div', { class: 'draft-grid' }, allies, center, enemies));
+  container.replaceChildren(head, unsupported || '', hint || '', bans || '', el('div', { class: 'draft-grid' }, allies, center, enemies));
 }

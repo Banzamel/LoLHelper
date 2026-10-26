@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('api', {
   onLcuStatus: on('lcu:status'),
   onDraft: on('lcu:draft'),
   onGamePhase: on('lcu:phase'),
+  onGameMode: on('lcu:mode'),
   onUpdateProgress: on('db:progress'),
   onGame: on('live:game'),
   onAppUpdate: on('app:update'),

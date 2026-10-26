@@ -44,6 +44,18 @@ const ROLE_PATHS = {
 export const roleIcon = (role) => svg(ROLE_PATHS[role] || '<circle cx="12" cy="12" r="6" fill="currentColor" opacity=".4"/>');
 export const ROLES = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT'];
 
+// Ranked tier badge: "Gold II · 45 LP" plus the season winrate; compact = tier and division only.
+export function rankBadge(rank, { compact = false } = {}) {
+  if (!rank) return null;
+  if (!rank.tier) return el('span', { class: 'rank-badge unranked' }, t('rank.unranked'));
+  const name = `${t(`rank.${rank.tier}`)}${rank.division ? ` ${rank.division}` : ''}`;
+  const games = rank.wins + rank.losses;
+  const title = games ? t('rank.record', { wins: rank.wins, losses: rank.losses }) : null;
+  return el('span', { class: `rank-badge tier-${rank.tier.toLowerCase()}`, title },
+    el('strong', {}, name), compact ? null : el('span', {}, `${rank.lp} LP`),
+    !compact && games ? el('span', { class: 'rank-wr' }, t('rank.winrate', { pct: Math.round((rank.wins / games) * 100), games })) : null);
+}
+
 export function champIcon(id, { size = '', round = false, banned = false, onClick, title } = {}) {
   const c = champ(id);
   const cls = ['champ-icon', size, round && 'round', banned && 'banned', !c && 'empty'].filter(Boolean).join(' ');

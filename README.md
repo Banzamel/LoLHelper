@@ -21,6 +21,9 @@ From version 0.2.0 the app **updates itself** from GitHub Releases (banner under
 
 ## Features
 
+Supported modes: role-based Summoner's Rift queues — Ranked Solo/Duo and Flex, Normal Draft, Clash,
+Swiftplay and Quickplay. ARAM, Blind Pick, rotating modes and custom games are skipped (the app shows a notice).
+
 ### Draft — counter-picks
 - Live data from champion select through the League Client API (LCU): both teams, hovers, bans,
   your assigned position, pickable champions and your champion mastery.
@@ -44,7 +47,10 @@ From version 0.2.0 the app **updates itself** from GitHub Releases (banner under
 - **Export runes** (saved and selected in the client) and **set summoner spells** during champion select.
 
 ### Live match
-- While the game runs, the app reads the Live Client Data API: real positions, enemy levels, KDA, CS and items.
+- While the game runs, the app reads the Live Client Data API: both teams with Riot IDs, levels, KDA, CS and items.
+- Roles picked in draft and every player's **rank** (tier, division, LP, season winrate — Flex in Flex games,
+  Solo/Duo otherwise) come from the League client. Riot hides names in ranked champion select, so ranks appear
+  once the game starts. The widget shows the lane opponent's rank.
 - The build adapts to what the enemies actually bought, keeps the items you own and shows the **next item to buy**
   and how much gold you still need.
 
@@ -77,7 +83,8 @@ npm run dist         # build the installer -> dist/LoLHelper-Setup-<version>.exe
 ```
 
 Development switches: `LOLHELPER_LIVE=1` polls the Live Client Data API without waiting for the client's
-game phase (useful with a mock server on `https://127.0.0.1:2999`).
+game phase (useful with a mock server on `https://127.0.0.1:2999`); `LOLHELPER_ROSTER=<file.json>` supplies
+the match roster (roles, ranks) without a League client.
 
 ### Project layout
 | Path | Contents |

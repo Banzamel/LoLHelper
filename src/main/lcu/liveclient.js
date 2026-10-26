@@ -1,6 +1,7 @@
 // In-game data from the Live Client Data API (https://127.0.0.1:2999), served by the
 // game itself while a match is running. Polled every few seconds; emits a compact
-// snapshot: my champion, gold, level, items and both teams with real positions.
+// snapshot: my champion, gold, level, items and both teams with real positions. The roster
+// from the LCU (roles picked in draft, ranks) fills in what the game itself does not report.
 const https = require('https');
 const { EventEmitter } = require('events');
 
@@ -30,18 +31,24 @@ function championIdOf(player, db) {
   return found ? found.id : raw || null;
 }
 
-function normalize(data, db) {
+function normalize(data, db, roster = null) {
   const meName = data.activePlayer.riotId || data.activePlayer.summonerName;
-  const players = (data.allPlayers || []).map((p) => ({
-    championId: championIdOf(p, db),
-    name: p.riotId || p.summonerName,
-    team: p.team,
-    position: POSITION[p.position] || null,
-    level: p.level,
-    dead: p.isDead,
-    items: (p.items || []).map((i) => i.itemID),
-    scores: p.scores || {},
-  }));
+  const fromRoster = (championId, team) => (roster || []).find((r) => r.championId === championId && r.team === team) || {};
+  const players = (data.allPlayers || []).map((p) => {
+    const championId = championIdOf(p, db);
+    const extra = fromRoster(championId, p.team);
+    return {
+      championId,
+      name: p.riotId || p.summonerName,
+      team: p.team,
+      position: POSITION[p.position] || extra.position || null,
+      rank: extra.rank || null,
+      level: p.level,
+      dead: p.isDead,
+      items: (p.items || []).map((i) => i.itemID),
+      scores: p.scores || {},
+    };
+  });
   const me = players.find((p) => p.name === meName) || null;
   const allies = me ? players.filter((p) => p.team === me.team) : [];
   const enemies = me ? players.filter((p) => p.team !== me.team) : players;
@@ -55,9 +62,10 @@ function normalize(data, db) {
 }
 
 class LiveClient extends EventEmitter {
-  constructor(getDb) {
+  constructor(getDb, getRoster = () => null) {
     super();
     this.getDb = getDb;
+    this.getRoster = getRoster;
     this.timer = null;
     this.game = null;
   }
@@ -79,7 +87,7 @@ class LiveClient extends EventEmitter {
     if (!db) return;
     try {
       const data = await fetchGame();
-      if (data && data.activePlayer && data.allPlayers) this.setGame(normalize(data, db));
+      if (data && data.activePlayer && data.allPlayers) this.setGame(normalize(data, db, this.getRoster()));
     } catch {
       // Game still loading or already closed.
     }

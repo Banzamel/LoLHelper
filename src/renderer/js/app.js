@@ -1,6 +1,6 @@
 // Renderer entry: boot, navigation, title bar status and live client events.
 import { loadLanguage, setChampionResolver, t, translateDom } from './i18n.js';
-import { state, emit, setDatabase, champ } from './store.js';
+import { state, emit, setDatabase, champ, isSupported } from './store.js';
 import { el, navIcon } from './ui.js';
 import { renderDraft } from '../views/draft.js';
 import { renderBuild } from '../views/build.js';
@@ -44,7 +44,8 @@ function renderStatus() {
   pill.classList.toggle('on', !!state.lcu.connected);
   pill.querySelector('span').textContent = t(state.lcu.connected ? 'status.connected' : 'status.waiting');
   const phase = state.draft && state.draft.phase ? state.draft.phase : state.phase;
-  document.getElementById('game-phase').textContent = state.lcu.connected && phase && phase !== 'None' ? t(`phase.${phase}`) : '';
+  const label = state.lcu.connected && phase && phase !== 'None' ? t(`phase.${phase}`) : '';
+  document.getElementById('game-phase').textContent = label && !isSupported() ? `${label} · ${t('mode.unsupportedShort')}` : label;
   document.getElementById('patch').textContent = state.db && state.db.meta ? t('status.patch', { version: state.db.meta.version }) : '';
 }
 
@@ -69,6 +70,7 @@ async function boot() {
   state.version = init.version;
   state.lcu = init.status;
   state.phase = init.phase;
+  state.mode = init.mode;
   state.draft = init.draft;
   state.game = init.game;
   state.appUpdate = init.update;
@@ -79,8 +81,9 @@ async function boot() {
   window.api.onGamePhase((p) => {
     state.phase = p;
     renderStatus();
-    if (p === 'ChampSelect' && state.settings.autoOpenDraft && current.name !== 'draft') navigate('draft');
+    if (p === 'ChampSelect' && isSupported() && state.settings.autoOpenDraft && current.name !== 'draft') navigate('draft');
   });
+  window.api.onGameMode((m) => { state.mode = m; renderStatus(); emit('mode'); });
   window.api.onDraft((d) => { state.draft = d; renderStatus(); emit('draft'); });
   window.api.onGame((g) => {
     const started = !(state.game && state.game.me) && g && g.me;

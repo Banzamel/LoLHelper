@@ -9,12 +9,16 @@ export const state = {
   db: null,
   lcu: { connected: false },
   phase: 'None',
+  mode: null,
   draft: null,
   game: null,
   appUpdate: { state: 'idle' },
   manual: { myTeam: Array(5).fill(null), theirTeam: Array(5).fill(null), myRole: 'MIDDLE', opponent: null, enemyRoles: {} },
   buildTarget: { championId: null, enemyId: null, role: null },
 };
+
+// False only when the client is in a known, unsupported mode (ARAM, blind pick, custom…).
+export function isSupported() { return !state.mode || state.mode.supported; }
 
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 export function emit(what) { listeners.forEach((fn) => fn(what)); }

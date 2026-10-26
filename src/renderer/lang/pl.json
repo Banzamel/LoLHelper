@@ -327,5 +327,21 @@
   "overlay.preview": "Podgląd — dane pojawią się w trakcie meczu.",
   "overlay.moveHint": "Przeciągnij widżet · {key} — zablokuj",
   "overlay.nextSkill": "Poz. {level}:",
-  "overlay.canAfford": "Stać Cię — kup!"
+  "overlay.canAfford": "Stać Cię — kup!",
+  "mode.unsupported": "Ten tryb gry nie jest obsługiwany.",
+  "mode.unsupportedHint": "LoL Helper działa w trybach z rolami na Summoner's Rift: rankingowe Solo/Duo i Flex, normalne z wyborem (draft), Clash, Swiftplay i Quickplay. ARAM, Blind Pick, tryby rotacyjne i gry własne są pomijane.",
+  "mode.unsupportedShort": "tryb nieobsługiwany",
+  "rank.unranked": "Bez rangi",
+  "rank.winrate": "{pct}% WR ({games} gier)",
+  "rank.record": "{wins} W / {losses} P",
+  "rank.IRON": "Żelazo",
+  "rank.BRONZE": "Brąz",
+  "rank.SILVER": "Srebro",
+  "rank.GOLD": "Złoto",
+  "rank.PLATINUM": "Platyna",
+  "rank.EMERALD": "Szmaragd",
+  "rank.DIAMOND": "Diament",
+  "rank.MASTER": "Mistrz",
+  "rank.GRANDMASTER": "Arcymistrz",
+  "rank.CHALLENGER": "Pretendent"
 }

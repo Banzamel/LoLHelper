@@ -98,3 +98,20 @@
 .item-desc shield { color: #b8d8ff; }
 .item-desc keyword, .item-desc status { color: var(--teal); }
 .item-desc rules, .item-desc flavortext { display: block; color: var(--muted); font-style: italic; margin-top: 6px; }
+
+/* Ranked tier badge */
+.rank-badge { --tier: var(--muted); display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px; border-radius: 10px; font-size: 11px; white-space: nowrap;
+  color: var(--text); border: 1px solid color-mix(in srgb, var(--tier) 55%, transparent); background: color-mix(in srgb, var(--tier) 14%, transparent); }
+.rank-badge strong { color: var(--tier); }
+.rank-badge .rank-wr { color: var(--muted); }
+.rank-badge.unranked { color: var(--muted); }
+.tier-iron { --tier: #9a8b84; }
+.tier-bronze { --tier: #c08457; }
+.tier-silver { --tier: #b8c4cc; }
+.tier-gold { --tier: #e6b94f; }
+.tier-platinum { --tier: #4fc1b3; }
+.tier-emerald { --tier: #34c77b; }
+.tier-diamond { --tier: #7d9bff; }
+.tier-master { --tier: #c46cf0; }
+.tier-grandmaster { --tier: #ef5a4f; }
+.tier-challenger { --tier: #f6d77f; }

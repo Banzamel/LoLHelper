@@ -1,8 +1,12 @@
-// Keeps the live client state (connection, game phase, champion select, mastery) and
-// pushes it to the renderer whenever the LCU reports a change.
+// Keeps the live client state (connection, game phase, game mode, champion select, mastery,
+// match roster with ranks) and pushes it to the renderer whenever the LCU reports a change.
 const { LcuClient } = require('./client');
 const { normalizeSession } = require('./champselect');
+const { modeOf } = require('./queues');
+const { fetchRoster } = require('./roster');
 const { inferRoles } = require('../engine/roles');
+
+const ROSTER_RETRY_MS = 5000;
 
 class LcuWatcher {
   constructor({ getDb, send, onPhase = () => {} }) {
@@ -12,7 +16,10 @@ class LcuWatcher {
     this.lcu = new LcuClient();
     this.status = { connected: false };
     this.phase = 'None';
+    this.mode = null;
     this.draft = null;
+    this.roster = null;
+    this.rosterTimer = null;
     this.mastery = {};
     this.pickable = [];
     this.lcu.on('status', (s) => this.onStatus(s));
@@ -20,6 +27,9 @@ class LcuWatcher {
   }
 
   start(leagueDir) { this.lcu.start(leagueDir); }
+
+  // false only when the mode is known and unsupported (ARAM, blind pick, custom…).
+  get supported() { return !this.mode || this.mode.supported; }
 
   async onStatus(status) {
     this.status = status;
@@ -29,7 +39,7 @@ class LcuWatcher {
       const list = await this.lcu.get('/lol-champion-mastery/v1/local-player/champion-mastery');
       this.mastery = Object.fromEntries((list || []).map((m) => [m.championId, m.championPoints]));
     } catch { this.mastery = {}; }
-    try { this.setPhase(await this.lcu.get('/lol-gameflow/v1/gameflow-phase')); } catch { /* client still loading */ }
+    try { await this.setPhase(await this.lcu.get('/lol-gameflow/v1/gameflow-phase')); } catch { /* client still loading */ }
     try { await this.refreshSession(await this.lcu.get('/lol-champ-select/v1/session')); } catch { /* not in champ select */ }
   }
 
@@ -41,15 +51,48 @@ class LcuWatcher {
     }
   }
 
-  setPhase(phase) {
+  async setPhase(phase) {
     this.phase = phase;
+    await this.refreshMode();
     this.send('lcu:phase', phase);
-    this.onPhase(phase);
+    if (phase === 'InProgress') this.loadRoster();
+    else this.setRoster(null);
+    this.onPhase(phase, this.mode);
+  }
+
+  async refreshMode() {
+    let mode = null;
+    if (this.status.connected && this.phase !== 'None') {
+      try { mode = modeOf(await this.lcu.get('/lol-gameflow/v1/session')); } catch { /* no session */ }
+    }
+    this.mode = mode;
+    this.send('lcu:mode', mode);
+    if (!this.supported) this.setDraft(null);
+  }
+
+  // The teams appear in the gameflow session a moment after the game starts; retry until they do.
+  async loadRoster() {
+    clearTimeout(this.rosterTimer);
+    const db = this.getDb();
+    if (!db || !this.supported || this.phase !== 'InProgress') return;
+    let roster = null;
+    try {
+      const session = await this.lcu.get('/lol-gameflow/v1/session');
+      roster = await fetchRoster(this.lcu, session, db, this.mode ? this.mode.rankedQueue : 'RANKED_SOLO_5x5');
+    } catch { /* retried below */ }
+    if (this.phase !== 'InProgress') return;
+    if (roster) this.setRoster(roster);
+    else this.rosterTimer = setTimeout(() => this.loadRoster(), ROSTER_RETRY_MS);
+  }
+
+  setRoster(roster) {
+    if (!roster) clearTimeout(this.rosterTimer);
+    this.roster = roster;
   }
 
   async refreshSession(session) {
     const db = this.getDb();
-    if (!db) return;
+    if (!db || !this.supported) return;
     const draft = normalizeSession(session, db);
     if (draft && (!this.draft || this.draft.gameId !== draft.gameId)) {
       try { this.pickable = await this.lcu.get('/lol-champ-select/v1/pickable-champion-ids'); } catch { this.pickable = []; }
@@ -67,7 +110,7 @@ class LcuWatcher {
   }
 
   snapshot() {
-    return { status: this.status, phase: this.phase, draft: this.draft };
+    return { status: this.status, phase: this.phase, mode: this.mode, draft: this.draft };
   }
 }
 

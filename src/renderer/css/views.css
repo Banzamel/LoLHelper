@@ -130,3 +130,6 @@ h3.sub { margin: 14px 0 8px; color: var(--gold); font-size: 12px; text-transform
 .opacity-row { display: flex; align-items: center; gap: 10px; }
 .opacity-slider { width: 180px; margin: 0; }
 .input.hotkey { width: 220px; font-family: Consolas, monospace; }
+
+.mode-notice { display: grid; gap: 4px; margin-bottom: 12px; border-color: rgba(10, 200, 185, 0.45); }
+.mode-notice strong { color: var(--gold-hi); }

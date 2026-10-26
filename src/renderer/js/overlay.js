@@ -2,7 +2,7 @@
 // items, refreshed from the live match. In move mode the widget can be dragged.
 import { loadLanguage, setChampionResolver, t } from './i18n.js';
 import { state, setDatabase, champ, item, asset } from './store.js';
-import { el, itemIcon, champIcon } from './ui.js';
+import { el, itemIcon, champIcon, rankBadge } from './ui.js';
 import { bought, buildForGame, nextSkill } from './game.js';
 
 const widget = document.getElementById('widget');
@@ -48,7 +48,7 @@ async function draw() {
     el('div', { class: 'w-strip' }, fullIds.map((id) => el('div', { class: ownedSet.has(id) ? 'owned' : '' }, itemIcon(id)))),
     skillRow(build, game.me.level, game.me.championId) || '',
     opp ? el('div', { class: 'w-opp' }, champIcon(opp.championId, { size: 'xs' }), el('span', {}, champ(opp.championId) ? champ(opp.championId).name : ''),
-      oppItems.map((id) => itemIcon(id))) : '',
+      rankBadge(opp.rank, { compact: true }), oppItems.map((id) => itemIcon(id))) : '',
     hint || '');
 }
 
@@ -58,7 +58,7 @@ function fit() {
 
 function refresh(force = false) {
   const g = state.game;
-  const key = JSON.stringify([ov, g && g.me ? [g.me.items, g.me.level, Math.floor(g.me.gold / 50), g.enemies.map((e) => e.items)] : null]);
+  const key = JSON.stringify([ov, g && g.me ? [g.me.items, g.me.level, Math.floor(g.me.gold / 50), g.enemies.map((e) => [e.items, e.rank, e.position])] : null]);
   if (!force && key === lastKey) return;
   lastKey = key;
   draw().then(fit);

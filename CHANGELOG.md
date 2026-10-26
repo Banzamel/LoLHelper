@@ -7,6 +7,18 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Added
+- **Player ranks in the Match view**: tier, division, LP and season winrate of all 10 players (Flex rank in
+  Flex games, Solo/Duo otherwise), read from the League client. The widget shows the lane opponent's rank.
+- The Match view lists your team too, with each player's Riot ID.
+
+### Changed
+- Roles in a match come from the draft (League client), so the lane opponent is no longer guessed when the
+  game does not report positions.
+- Only role-based Summoner's Rift queues are supported (Ranked Solo/Duo and Flex, Normal Draft, Clash,
+  Swiftplay, Quickplay). In ARAM, Blind Pick, rotating modes and custom games the app shows a notice instead
+  of draft data, does not open the Draft or Match view and keeps the widget hidden.
+
 ## [0.3.1] - 2026-10-26
 
 ### Fixed
