@@ -7,6 +7,11 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Added
+- **Fed enemies count more**: during a match each enemy is weighted by their score and the gold in their items,
+  so boots, defensive and situational items follow who is actually dangerous (e.g. Mercury's Treads and Maw of
+  Malmortius against a fed Akali). Fed enemies are listed as "Fed: <champion>" next to the threats.
+
 ## [0.7.0] - 2026-10-26
 
 ### Changed

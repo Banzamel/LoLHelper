@@ -87,3 +87,17 @@ test('positions are ordered by play rate', () => {
   assert.strictEqual(db.byId.Teemo.positions[0], 'TOP');
   assert.strictEqual(db.byId.Akali.positions[0], 'MIDDLE');
 });
+
+test('a fed enemy weighs more in the threat profile', () => {
+  const { threatWeights } = require('../src/main/engine/live');
+  const it = (names) => names.map((x) => db.items.find((i) => i.nameEn === x).id);
+  const enemyIds = ['Sion', 'Warwick', 'Akali', 'Kalista', 'Teemo'];
+  const enemyItems = { Sion: it(['Bramble Vest']), Warwick: it(['Pickaxe']), Akali: it(['Lich Bane', 'Shadowflame']), Kalista: it(['Long Sword']), Teemo: it(['Amplifying Tome']) };
+  const enemyStats = { Sion: { deaths: 3 }, Warwick: { kills: 1, deaths: 3 }, Akali: { kills: 9, assists: 2 }, Kalista: { deaths: 4 }, Teemo: { kills: 3, deaths: 1 } };
+  const w = threatWeights(db, enemyStats, enemyItems);
+  assert.ok(w.Akali > 1.8 && w.Kalista < 1);
+  const b = recommendBuild(db, { championId: 'XinZhao', enemyId: 'Warwick', role: 'JUNGLE', enemyIds, enemyItems, enemyStats });
+  assert.ok(b.threats.some((x) => x.key === 'threat.fed' && x.params.enemy === 'Akali'));
+  assert.strictEqual(db.itemById[b.boots.id].nameEn, "Mercury's Treads");
+  assert.deepStrictEqual(threatWeights(db, null, enemyItems), {});
+});

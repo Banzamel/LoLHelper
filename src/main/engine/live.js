@@ -42,6 +42,26 @@ function applyEnemyItems(db, t, enemyItems) {
   return out;
 }
 
+// How dangerous each enemy is right now, from their score and the gold in their items:
+// { championId: weight }, 1 = average, clamped to 0.4–3. Empty before the match has data.
+const FED = 1.8;
+
+function threatWeights(db, enemyStats, enemyItems) {
+  const ids = Object.keys(enemyStats || {});
+  if (!ids.length) return {};
+  const gold = Object.fromEntries(ids.map((id) => [id, ((enemyItems || {})[id] || [])
+    .reduce((s, i) => s + (db.itemById[i] ? db.itemById[i].gold.total : 0), 0)]));
+  const avgGold = ids.reduce((s, id) => s + gold[id], 0) / ids.length;
+  const out = {};
+  for (const id of ids) {
+    const { kills = 0, deaths = 0, assists = 0 } = enemyStats[id] || {};
+    const score = kills + 0.4 * assists - 0.6 * deaths;
+    const w = 1 + 0.08 * score + (avgGold > 500 ? 0.6 * ((gold[id] - avgGold) / avgGold) : 0);
+    out[id] = Math.round(Math.min(3, Math.max(0.4, w)) * 100) / 100;
+  }
+  return out;
+}
+
 // First item of the recommended order that the player does not own yet.
 function nextPurchase(db, build, owned) {
   const have = new Set(owned || []);
@@ -55,4 +75,4 @@ function nextPurchase(db, build, owned) {
   return null;
 }
 
-module.exports = { applyEnemyItems, nextPurchase };
+module.exports = { applyEnemyItems, nextPurchase, threatWeights, FED };

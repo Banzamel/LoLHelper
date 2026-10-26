@@ -30,6 +30,7 @@ export async function buildForGame(game) {
     enemyIds: game.enemies.map((e) => e.championId),
     role,
     enemyItems: Object.fromEntries(game.enemies.map((e) => [e.championId, bought(e.items)])),
+    enemyStats: Object.fromEntries(game.enemies.map((e) => [e.championId, e.scores || {}])),
     ownedItems: owned,
   });
   const ownedBoots = owned.find((id) => item(id).tags.includes('Boots') && item(id).category !== 'component');

@@ -2,7 +2,7 @@
 // champion's class weights, then adjusted for the enemy laner and enemy team threats
 // (damage type, healing, tanks, burst, crowd control, auto-attackers, shields).
 const { recommendLoadout } = require('./loadout');
-const { applyEnemyItems, nextPurchase } = require('./live');
+const { applyEnemyItems, nextPurchase, threatWeights, FED } = require('./live');
 
 const GOLD = { ad: 35, ap: 20, armor: 20, mr: 18, hp: 2.67, as: 25, crit: 40, haste: 26.7, lethality: 30, armorPen: 40,
   magicPen: 46, magicPenFlat: 31, lifesteal: 37.5, omnivamp: 40, mana: 1.4, manaRegen: 3, hpRegen: 3, hsp: 66, tenacity: 10, msPct: 39 };
@@ -41,10 +41,12 @@ function classOf(c, role) {
   return 'bruiser';
 }
 
-function analyzeThreats(laner, enemies) {
+// weightOf(champion): how dangerous that enemy is in the running match (1 = average);
+// a fed enemy shifts the threat profile towards what they deal.
+function analyzeThreats(laner, enemies, weightOf = () => 1) {
   const list = [...(laner ? [laner, laner] : []), ...enemies.filter((e) => !laner || e.id !== laner.id)];
-  const n = list.length || 1;
-  const count = (fn) => list.filter(fn).length / n;
+  const n = list.reduce((s, e) => s + weightOf(e), 0) || 1;
+  const count = (fn) => list.reduce((s, e) => s + (fn(e) ? weightOf(e) : 0), 0) / n;
   return {
     ad: count((e) => e.damageType === 'AD'),
     ap: count((e) => e.damageType === 'AP'),
@@ -52,7 +54,7 @@ function analyzeThreats(laner, enemies) {
     tanks: count((e) => e.ratings.toughness >= 3 || has(e, ['TANK', 'VANGUARD', 'WARDEN'])),
     burstAD: count((e) => e.damageType === 'AD' && has(e, ['ASSASSIN'])),
     burstAP: count((e) => e.damageType === 'AP' && has(e, ['BURST', 'ASSASSIN'])),
-    cc: list.reduce((s, e) => s + e.traits.hardCC, 0) / n,
+    cc: list.reduce((s, e) => s + e.traits.hardCC * weightOf(e), 0) / n,
     autoAttack: count((e) => has(e, ['MARKSMAN', 'SKIRMISHER'])),
     shields: count((e) => e.traits.shield >= 2),
     empty: !list.length,
@@ -154,14 +156,15 @@ function pickBoots(db, cls, t) {
   return boots ? { id: boots.id, upgrade: boots.into[0] || null, reason } : null;
 }
 
-function recommendBuild(db, { championId, enemyId, enemyIds = [], role, enemyItems = null, ownedItems = null }) {
+function recommendBuild(db, { championId, enemyId, enemyIds = [], role, enemyItems = null, enemyStats = null, ownedItems = null }) {
   const champ = db.byId[championId];
   if (!champ) throw new Error(`Unknown champion ${championId}`);
   const laner = enemyId ? db.byId[enemyId] : null;
   const enemies = enemyIds.map((id) => db.byId[id]).filter(Boolean);
   const cls = classOf(champ, role || champ.positions[0]);
   const w = WEIGHTS[cls];
-  const t = applyEnemyItems(db, analyzeThreats(laner, enemies), enemyItems);
+  const weights = threatWeights(db, enemyStats, enemyItems);
+  const t = applyEnemyItems(db, analyzeThreats(laner, enemies, (e) => weights[e.id] || 1), enemyItems);
   const pool = db.items.filter((i) => i.category === 'legendary');
   const owned = new Set((ownedItems || []).filter((id) => db.itemById[id] && db.itemById[id].category === 'legendary'));
 
@@ -187,7 +190,9 @@ function recommendBuild(db, { championId, enemyId, enemyIds = [], role, enemyIte
     if (situ.length >= 5) break;
     if (!taken.includes(s.item) && !conflicts(s.item, [...taken, ...situ.map((x) => x.item)])) situ.push(s);
   }
-  const fill = [...scored].sort((a, b) => (b.base + b.sitScore * 0.3) - (a.base + a.sitScore * 0.3))
+  // In a running match the situation counts more: a fed burst enemy pulls Maw / Edge of Night in.
+  const sitWeight = t.live ? 0.6 : 0.3;
+  const fill = [...scored].sort((a, b) => (b.base + b.sitScore * sitWeight) - (a.base + a.sitScore * sitWeight))
     .filter((s) => !taken.includes(s.item));
   const full = [...taken];
   for (const s of fill) {
@@ -204,6 +209,7 @@ function recommendBuild(db, { championId, enemyId, enemyIds = [], role, enemyIte
     if (t.cc >= 1.6) threats.push({ key: 'threat.cc' });
     if (t.autoAttack >= 0.4) threats.push({ key: 'threat.autoAttack' });
     if (t.live) threats.push({ key: 'threat.fromItems' });
+    for (const [id, w] of Object.entries(weights)) if (w >= FED) threats.push({ key: 'threat.fed', params: { enemy: id } });
   }
 
   const build = {

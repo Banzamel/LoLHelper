@@ -364,5 +364,6 @@
   "live.startersCost": "Total {n} gold",
   "rank.previous": "last season: {rank}",
   "rank.previousHint": "No ranked games this season — rank at the end of last season.",
-  "loadout.riotPage": "The page from Riot's recommendations (offered in the client) that best fits the matchup"
+  "loadout.riotPage": "The page from Riot's recommendations (offered in the client) that best fits the matchup",
+  "threat.fed": "Fed: {enemy}"
 }
