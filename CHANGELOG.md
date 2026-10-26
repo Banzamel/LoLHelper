@@ -7,6 +7,10 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Fixed
+- App update installs silently and restarts the app; before, "Restart and install" opened the installer
+  wizard and waited for clicks. (Updating from 0.3.0 still shows the wizard once — click through it.)
+
 ## [0.3.0] - 2026-10-26
 
 ### Added

@@ -28,7 +28,8 @@ function setupAppUpdater(send) {
     status: () => state,
     check,
     download: () => autoUpdater.downloadUpdate(),
-    install: () => autoUpdater.quitAndInstall(false, true),
+    // Silent install (no wizard), then start the updated app.
+    install: () => autoUpdater.quitAndInstall(true, true),
   };
 }
 
