@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-26
+
 ### Added
 - The widget pulses green when you can afford the next purchase.
 - Match view: the skill order sits right below the build, with levels already taken dimmed and the next
@@ -112,7 +114,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Banzamel/LoLHelper/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Banzamel/LoLHelper/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Banzamel/LoLHelper/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/Banzamel/LoLHelper/compare/v0.3.0...v0.3.1
