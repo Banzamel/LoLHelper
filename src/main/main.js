@@ -103,7 +103,7 @@ function createWindow() {
   win.webContents.on('console-message', (_e, level, message, line, source) => {
     if (level >= 2) console.error(`[renderer] ${message} (${source}:${line})`);
   });
-  if (process.env.LOLHELPER_CAPTURE) require('./dev-capture')(win, app, process.env.LOLHELPER_CAPTURE, process.env.LOLHELPER_CAPTURE_PREPARE);
+  if (process.env.LOLHELPER_CAPTURE) require('./dev-capture')(win, app, process.env.LOLHELPER_CAPTURE, process.env.LOLHELPER_CAPTURE_PREPARE, overlay);
   win.loadURL('app://ui/index.html');
 }
 

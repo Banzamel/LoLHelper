@@ -376,7 +376,7 @@
   "history.empty": "No saved matches yet.",
   "history.emptyHint": "Every finished match in a supported mode is saved here automatically — with the result, items in purchase order and both teams. The app learns from it what to buy and what to pick.",
   "history.byChampion": "Your champions",
-  "history.champLine": "{games} games · {pct}% won · avg {kda}",
+  "history.champLine": "{games} games · {pct}% won",
   "history.matches": "Matches",
   "history.learnHint": "Click a match to see the purchase order and the enemies' items. Items you win with in similar matches get a bonus in the build; items from losses get a penalty.",
   "history.win": "Victory",
@@ -392,5 +392,6 @@
   "history.recordHint": "Your results with this champion from the match history",
   "build.historyWin": "You won with it in similar matches ({wins}/{games})",
   "build.historyLoss": "You lost with it in similar matches ({wins}/{games} won)",
-  "counter.history": "Your results with this champion: {wins}/{games} won"
+  "counter.history": "Your results with this champion: {wins}/{games} won",
+  "history.champKda": "Average KDA: {kda}"
 }

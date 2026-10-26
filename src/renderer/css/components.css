@@ -119,12 +119,14 @@
 
 /* Buy order with parts */
 .item-icon.xs { width: 22px; height: 22px; }
-.buy-order { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
-.buy-step { display: grid; justify-items: center; gap: 6px; max-width: 120px; }
+/* Every step is a column of the same width, so the items line up whatever their parts. */
+.buy-order { display: flex; flex-wrap: wrap; gap: 12px 4px; align-items: flex-start; }
+.buy-step { display: grid; justify-items: center; align-content: start; gap: 6px; width: 78px; }
+.buy-order.named .buy-step { width: 112px; }
 .buy-main { position: relative; }
 .buy-n { position: absolute; left: -7px; top: -7px; z-index: 1; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
   font-size: 10px; font-weight: 700; background: var(--bg-0); border: 1px solid var(--gold); color: var(--gold-hi); }
-.buy-name { font-size: 12px; text-align: center; color: var(--gold-hi); line-height: 1.25; }
+.buy-name { display: grid; font-size: 12px; text-align: center; color: var(--gold-hi); line-height: 1.25; }
 .buy-parts { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
 .buy-parts .owned .item-icon, .buy-step.owned .item-icon { border-color: var(--green); }
 .buy-step.owned .buy-main::after { content: "\2713"; position: absolute; right: -6px; top: -6px; width: 16px; height: 16px; border-radius: 50%;

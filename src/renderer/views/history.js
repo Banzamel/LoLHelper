@@ -84,7 +84,8 @@ export async function renderHistory(root) {
     const champs = el('section', { class: 'panel' }, el('h2', {}, t('history.byChampion')),
       el('div', { class: 'hist-champs' }, championSummary(list).map((s) => el('div', { class: 'hist-champ' }, champIcon(s.id, { size: 'sm' }),
         el('div', {}, el('strong', {}, champ(s.id) ? champ(s.id).name : s.id),
-          el('div', { class: 'muted small' }, t('history.champLine', { games: s.games, pct: pct(s.wins, s.games), kda: `${(s.k / s.games).toFixed(1)} / ${(s.d / s.games).toFixed(1)} / ${(s.a / s.games).toFixed(1)}` })))))));
+          el('div', { class: 'muted small' }, t('history.champLine', { games: s.games, pct: pct(s.wins, s.games) })),
+          el('div', { class: 'muted small' }, t('history.champKda', { kda: `${(s.k / s.games).toFixed(1)} / ${(s.d / s.games).toFixed(1)} / ${(s.a / s.games).toFixed(1)}` })))))));
     const matches = el('section', { class: 'panel' }, el('h2', {}, t('history.matches')), el('p', { class: 'muted small' }, t('history.learnHint')),
       el('div', { class: 'hist-list' }, list.map((g) => matchRow(g, remove))));
     container.replaceChildren(head, champs, matches);

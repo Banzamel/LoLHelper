@@ -7,6 +7,18 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Fixed
+- Buy order: every item is a column of the same width, so items and their parts line up instead of drifting
+  apart (Match view, Build view); the hint above it no longer touches the numbers.
+- Draft at small window sizes: no horizontal scrolling, the recommendation cards shrink and wrap their reasons,
+  the hidden VS button no longer cuts enemy names short, roles do not break onto two lines.
+- History: the per-champion card shows the games/win rate and the average KDA on separate lines.
+- Runes: the "Second Wind against ranged poke" reason only appears when the page actually has Second Wind.
+
+### Changed
+- Development: the screenshot helper captures every view page by page, the overlay, a manual draft and a build,
+  takes `LOLHELPER_CAPTURE_SIZE=<w>x<h>` and reports elements that overflow horizontally.
+
 ## [0.9.0] - 2026-10-26
 
 ### Added

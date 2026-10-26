@@ -36,7 +36,7 @@ function tune(preset, cls, role, laner, t) {
   if (laner && laner.attackType === 'RANGED' && melee && ['TOP', 'MIDDLE'].includes(role)) {
     if (p.sub === 'Resolve') p.subRunes[0] = 'Second Wind';
     if (p.tree === 'Resolve') p.rows[1] = 'Second Wind';
-    reasons.push('loadout.secondWind');
+    if (p.sub === 'Resolve' || p.tree === 'Resolve') reasons.push('loadout.secondWind');
   }
   if (t.cc >= 2) { p.shards[2] = 5013; reasons.push('loadout.tenacity'); }
   return { p, reasons };

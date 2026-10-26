@@ -74,7 +74,7 @@ export function champIcon(id, { size = '', round = false, banned = false, onClic
 // owned: item ids the player has (finished items and parts are ticked).
 export function buildOrder(ids, { owned = [], names = false } = {}) {
   const have = new Set(owned);
-  return el('div', { class: 'buy-order' }, ids.map((id, i) => {
+  return el('div', { class: `buy-order ${names ? 'named' : ''}` }, ids.map((id, i) => {
     const it = item(id);
     if (!it) return null;
     return el('div', { class: `buy-step ${have.has(id) ? 'owned' : ''}` },

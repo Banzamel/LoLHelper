@@ -376,7 +376,7 @@
   "history.empty": "Brak zapisanych meczów.",
   "history.emptyHint": "Każdy ukończony mecz w obsługiwanym trybie zapisze się tu sam — z wynikiem, przedmiotami w kolejności kupowania i drużynami. Aplikacja uczy się z tego, co kupować i kim grać.",
   "history.byChampion": "Twoje postacie",
-  "history.champLine": "{games} gier · {pct}% wygranych · śr. {kda}",
+  "history.champLine": "{games} gier · {pct}% wygranych",
   "history.matches": "Mecze",
   "history.learnHint": "Kliknij mecz, by zobaczyć kolejność zakupów i przedmioty przeciwników. Przedmioty, z którymi wygrywasz w podobnych meczach, dostają premię w buildzie; te z przegranych — karę.",
   "history.win": "Wygrana",
@@ -392,5 +392,6 @@
   "history.recordHint": "Twoje wyniki tą postacią z historii meczów",
   "build.historyWin": "Wygrywałeś z nim w podobnych meczach ({wins}/{games})",
   "build.historyLoss": "Przegrywałeś z nim w podobnych meczach ({wins}/{games} wygr.)",
-  "counter.history": "Twoje wyniki tą postacią: {wins}/{games} wygr."
+  "counter.history": "Twoje wyniki tą postacią: {wins}/{games} wygr.",
+  "history.champKda": "Średnie KDA: {kda}"
 }
