@@ -7,6 +7,10 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Fixed
+- A fed enemy's damage items now also count for more when choosing boots and resistances (0.8.0 was tagged
+  with a failing test for this and was never built).
+
 ## [0.8.0] - 2026-10-26
 
 ### Added

@@ -12,8 +12,9 @@ function goldIn(stats, keys) {
 }
 
 // enemyItems: { championId: [itemId, ...] } -> adjusted copy of the threat profile `t`.
-function applyEnemyItems(db, t, enemyItems) {
-  const entries = Object.entries(enemyItems || {}).map(([id, ids]) => ids.map((i) => db.itemById[i]).filter(Boolean));
+// weights (threatWeights): a fed enemy's damage items count for more.
+function applyEnemyItems(db, t, enemyItems, weights = {}) {
+  const entries = Object.entries(enemyItems || {}).map(([id, ids]) => Object.assign(ids.map((i) => db.itemById[i]).filter(Boolean), { w: weights[id] || 1 }));
   const spent = entries.reduce((s, list) => s + list.reduce((g, it) => g + it.gold.total, 0), 0);
   if (!entries.length || spent < 1500) return t;
   let ad = 0;
@@ -25,8 +26,8 @@ function applyEnemyItems(db, t, enemyItems) {
     const a = sum(DMG_AD);
     const p = sum(DMG_AP);
     const d = sum(DEF);
-    ad += a;
-    ap += p;
+    ad += a * list.w;
+    ap += p * list.w;
     if (d > 2000 && d > (a + p)) tanky += 1;
     if (list.some((it) => it.features.stats.lifesteal || it.features.stats.omnivamp || it.features.stats.hsp)) healers += 1;
   }

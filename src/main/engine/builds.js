@@ -164,7 +164,7 @@ function recommendBuild(db, { championId, enemyId, enemyIds = [], role, enemyIte
   const cls = classOf(champ, role || champ.positions[0]);
   const w = WEIGHTS[cls];
   const weights = threatWeights(db, enemyStats, enemyItems);
-  const t = applyEnemyItems(db, analyzeThreats(laner, enemies, (e) => weights[e.id] || 1), enemyItems);
+  const t = applyEnemyItems(db, analyzeThreats(laner, enemies, (e) => weights[e.id] || 1), enemyItems, weights);
   const pool = db.items.filter((i) => i.category === 'legendary');
   const owned = new Set((ownedItems || []).filter((id) => db.itemById[id] && db.itemById[id].category === 'legendary'));
 
