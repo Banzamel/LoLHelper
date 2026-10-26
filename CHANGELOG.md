@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-26
+
 ### Added
 - **Your setup in Draft**: once you hover or lock a champion, the Draft view shows the runes, summoner spells,
   skill order and starting items for it in your role and against the enemy team, with Export runes / Set spells.
@@ -95,7 +97,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Banzamel/LoLHelper/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Banzamel/LoLHelper/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/Banzamel/LoLHelper/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Banzamel/LoLHelper/compare/v0.2.0...v0.3.0
