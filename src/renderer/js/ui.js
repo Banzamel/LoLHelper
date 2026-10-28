@@ -51,6 +51,7 @@ export function rankBadge(rank, { compact = false } = {}) {
   const tierName = (r) => `${t(`rank.${r.tier}`)}${r.division ? ` ${r.division}` : ''}`;
   if (!rank.tier) {
     const prev = rank.previous;
+    if (compact) return el('span', { class: 'rank-badge unranked', title: prev ? t('rank.previous', { rank: tierName(prev) }) : null }, t('rank.unranked'));
     return el('span', { class: `rank-badge unranked ${prev ? `tier-${prev.tier.toLowerCase()}` : ''}`, title: prev ? t('rank.previousHint') : null },
       t('rank.unranked'), prev ? el('span', { class: 'rank-prev' }, t('rank.previous', { rank: tierName(prev) })) : null);
   }

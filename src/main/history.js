@@ -1,6 +1,6 @@
 // Match history: every supported match the player finishes is saved (champion, role, lane
-// opponent, both teams, items in purchase order, score, result) to history.json in the user
-// data folder. The engine learns from it (engine/history.js).
+// opponent, both teams, items in purchase order, score, result, gold over time) to
+// history.json in the account's profile folder. The engine learns from it (engine/history.js).
 const fs = require('fs');
 const path = require('path');
 
@@ -8,14 +8,24 @@ const LIMIT = 500;
 const REMAKE_SECONDS = 300;
 
 class History {
-  constructor(dir) {
+  constructor(dir) { this.use(dir); }
+
+  // Loads the history of the folder `dir`; a history saved before profiles existed (in
+  // `legacyDir`) moves to the first profile that has none.
+  use(dir, legacyDir = null) {
     this.file = path.join(dir, 'history.json');
+    const legacy = legacyDir && path.join(legacyDir, 'history.json');
+    if (legacy && legacy !== this.file && fs.existsSync(legacy) && !fs.existsSync(this.file)) {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.renameSync(legacy, this.file);
+    }
     try { this.games = JSON.parse(fs.readFileSync(this.file, 'utf8')); } catch { this.games = []; }
   }
 
   list() { return this.games; }
 
   save() {
+    fs.mkdirSync(path.dirname(this.file), { recursive: true });
     fs.writeFileSync(this.file, JSON.stringify(this.games));
   }
 
@@ -93,6 +103,9 @@ class MatchRecorder {
       level: g.me.level,
       duration,
       win,
+      // Item gold of both teams once a minute: [minute, allies, enemies].
+      gold: (g.timeline || []).filter((x, i, all) => i === all.length - 1 || Math.floor(x.t / 60) !== Math.floor(all[i + 1].t / 60))
+        .map((x) => [Math.round(x.t / 60), x.ally, x.enemy]),
     };
   }
 }

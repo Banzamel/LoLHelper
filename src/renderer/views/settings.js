@@ -3,7 +3,7 @@ import { t } from '../js/i18n.js';
 import { state, subscribe } from '../js/store.js';
 import { appUpdateSection } from '../js/update.js';
 import { el, champIcon, roleIcon, ROLES, pickChampion, toast } from '../js/ui.js';
-import { applyLanguage, reloadDatabase, navigate } from '../js/app.js';
+import { applyLanguage, reloadDatabase, navigate, setDemo } from '../js/app.js';
 
 const LANGUAGE_NAMES = { pl: 'Polski', en: 'English' };
 
@@ -116,6 +116,9 @@ export function renderSettings(root) {
           row(t('settings.autoOpenDraft'), toggle('autoOpenDraft')),
           row(t('settings.autoOpenLive'), toggle('autoOpenLive')),
           row(t('settings.flashOnD'), toggle('flashOnD'), t('settings.flashOnDHint'))),
+        el('section', { class: 'panel' }, el('h2', {}, t('demo.title')), el('p', { class: 'muted small' }, t('demo.startHint')),
+          row(t('demo.toggle'), el('input', { type: 'checkbox', class: 'toggle', checked: state.demo ? true : null,
+            onChange: async (e) => { const ok = await setDemo(e.target.checked); if (e.target.checked && !ok) { e.target.checked = false; toast(t('demo.busy'), { error: true }); } } }))),
         overlaySection(),
         databaseSection(),
         el('section', { class: 'panel' }, el('h2', {}, t('settings.about')),
@@ -123,5 +126,7 @@ export function renderSettings(root) {
           el('h3', { class: 'sub' }, t('appUpdate.title')), appUpdate.node,
           el('p', { class: 'muted small disclaimer' }, t('settings.disclaimer')))),
       el('div', { class: 'champ-col' },
-        el('section', { class: 'panel' }, el('h2', {}, t('settings.pool')), el('p', { class: 'muted small' }, t('settings.poolHint')), poolSection()))));
+        el('section', { class: 'panel' }, el('h2', {}, t('settings.pool')), el('p', { class: 'muted small' }, t('settings.poolHint')),
+          el('p', { class: 'muted small' }, state.profile && state.profile.gameName ? t('settings.profileNote', { name: `${state.profile.gameName}#${state.profile.tagLine}` }) : t('settings.noProfileNote')),
+          poolSection()))));
 }

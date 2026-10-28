@@ -45,9 +45,23 @@ function renderStatus() {
   pill.classList.toggle('on', !!state.lcu.connected);
   pill.querySelector('span').textContent = t(state.lcu.connected ? 'status.connected' : 'status.waiting');
   const phase = state.draft && state.draft.phase ? state.draft.phase : state.phase;
-  const label = state.lcu.connected && phase && phase !== 'None' ? t(`phase.${phase}`) : '';
+  const label = state.demo ? t('demo.pill') : state.lcu.connected && phase && phase !== 'None' ? t(`phase.${phase}`) : '';
   document.getElementById('game-phase').textContent = label && !isSupported() ? `${label} · ${t('mode.unsupportedShort')}` : label;
   document.getElementById('patch').textContent = state.db && state.db.meta ? t('status.patch', { version: state.db.meta.version }) : '';
+  const p = state.profile;
+  const account = document.getElementById('profile');
+  account.textContent = p && p.gameName ? `${p.gameName}${p.tagLine ? `#${p.tagLine}` : ''}` : '';
+  account.title = t('status.profile');
+}
+
+// Starts or stops the simulated match; starting it opens the Match view.
+export async function setDemo(on) {
+  if (on) {
+    const started = await window.api.startDemo();
+    if (started) navigate('live');
+    return started;
+  }
+  return window.api.stopDemo();
 }
 
 export async function applyLanguage(lang) {
@@ -74,8 +88,11 @@ async function boot() {
   state.mode = init.mode;
   state.draft = init.draft;
   state.game = init.game;
+  state.demo = init.demo;
   state.appUpdate = init.update;
+  state.profile = init.profile;
   state.history = await window.api.listHistory();
+  state.matches = await window.api.listMatches();
   setChampionResolver((id) => (champ(id) ? champ(id).name : id));
   document.querySelectorAll('[data-win]').forEach((b) => b.addEventListener('click', () => window.api.window(b.dataset.win)));
 
@@ -87,6 +104,19 @@ async function boot() {
   });
   window.api.onGameMode((m) => { state.mode = m; renderStatus(); emit('mode'); });
   window.api.onHistory((h) => { state.history = h; emit('history'); });
+  // Another account logged in: its own settings, history and games.
+  window.api.onProfile(async ({ profile, settings, history }) => {
+    state.profile = profile;
+    state.settings = settings;
+    state.history = history;
+    state.matches = await window.api.listMatches();
+    renderStatus();
+    emit('profile');
+    if (current.name === 'settings') render();
+  });
+  window.api.onDemo((on) => { state.demo = on; renderStatus(); emit('demo'); if (current.name === 'settings') render(); });
+  window.api.onMatches(async () => { state.matches = await window.api.listMatches(); emit('matches'); });
+  window.api.onMatchSync((s) => { state.matches = { ...(state.matches || {}), ...s }; emit('matches'); });
   window.api.onDraft((d) => { state.draft = d; renderStatus(); emit('draft'); });
   window.api.onGame((g) => {
     const started = !(state.game && state.game.me) && g && g.me;

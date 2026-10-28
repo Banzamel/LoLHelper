@@ -43,9 +43,6 @@ body { display: flex; flex-direction: column; }
 /* Live match */
 .empty-state { padding: 30px; text-align: center; display: grid; gap: 8px; }
 .live-gold { font-size: 18px; font-weight: 700; }
-.live-top { display: grid; grid-template-columns: 1fr 320px; gap: 14px; margin-bottom: 14px; }
-.live-me-head { display: flex; gap: 14px; align-items: center; }
-.live-me-head h2 { color: var(--gold-hi); text-transform: none; font-size: 18px; }
 .live-threats { margin-top: 10px; }
 .owned-wrap { position: relative; }
 .owned-wrap.owned::after { content: "✓"; position: absolute; right: -4px; top: -6px; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; background: var(--green); color: #fff; }
@@ -58,16 +55,8 @@ body { display: flex; flex-direction: column; }
 .buy-now { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 6px 8px; border: 1px solid rgba(63, 178, 127, 0.45);
   border-radius: var(--radius); background: rgba(63, 178, 127, 0.08); }
 .buy-now strong { color: var(--gold-hi); }
-.live-team { margin-bottom: 14px; }
 .enemy-title { color: var(--red); margin-bottom: 10px; }
-.live-row { display: grid; grid-template-columns: 22px 32px 190px 210px 90px 80px 64px 1fr; gap: 10px; align-items: center; padding: 6px 8px; border: 1px solid transparent; border-radius: var(--radius); }
-.live-row.opponent { border-color: rgba(232, 64, 87, 0.55); background: linear-gradient(90deg, rgba(232, 64, 87, 0.12), transparent); }
-.live-row.me { border-color: rgba(10, 200, 185, 0.45); background: linear-gradient(90deg, rgba(10, 200, 185, 0.1), transparent); }
-.live-row.dead { opacity: 0.5; }
 .ally-title { color: var(--teal); margin-bottom: 10px; }
-.live-name { display: grid; line-height: 1.2; min-width: 0; }
-.live-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.live-name strong { color: var(--gold-hi); }
 .live-kda { color: var(--gold-hi); font-variant-numeric: tabular-nums; }
 .live-items { gap: 4px; }
 .live-loadout { display: flex; align-items: center; gap: 3px; }
@@ -85,5 +74,4 @@ body { display: flex; flex-direction: column; }
 .sit-item { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border: 1px solid var(--line); border-radius: var(--radius); margin: 0 8px 8px 0; flex-wrap: wrap; }
 
 @media (max-width: 1250px) {
-  .loadout, .live-top { grid-template-columns: 1fr; }
-}
+  .loadout, }

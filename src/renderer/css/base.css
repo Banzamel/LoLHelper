@@ -58,14 +58,15 @@ img { display: block; }
 }
 .brand-hex::after { content: ""; position: absolute; inset: 4px; background: var(--teal); clip-path: inherit; }
 .titlebar-status { display: flex; gap: 8px; align-items: center; margin-left: 12px; }
-.status-pill, .phase-pill, .patch-pill {
+.status-pill, .phase-pill, .patch-pill, .profile-pill {
   display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 10px; border-radius: 11px;
   background: var(--bg-2); border: 1px solid var(--line); font-size: 11px; color: var(--muted);
 }
 .status-pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--red); box-shadow: 0 0 6px var(--red); }
 .status-pill.on i { background: var(--green); box-shadow: 0 0 6px var(--green); }
 .status-pill.on { color: var(--gold-hi); }
-.phase-pill:empty { display: none; }
+.phase-pill:empty, .profile-pill:empty { display: none; }
+.profile-pill { color: var(--gold-hi); border-color: var(--line-gold); }
 .phase-pill { color: var(--teal); border-color: rgba(10, 200, 185, 0.35); }
 .window-controls { margin-left: auto; display: flex; height: 100%; -webkit-app-region: no-drag; }
 .window-controls button { width: 46px; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; }

@@ -11,6 +11,12 @@ export const state = {
   phase: 'None',
   mode: null,
   history: [],
+  // The League account the data belongs to ({ puuid, gameName, tagLine, level, icon, ranks }).
+  profile: null,
+  // The account's games from the client: { games, analysis, lastSync, syncing }.
+  matches: null,
+  // A simulated match is running (Match view preview without playing).
+  demo: false,
   draft: null,
   game: null,
   appUpdate: { state: 'idle' },

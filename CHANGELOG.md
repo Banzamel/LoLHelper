@@ -7,6 +7,37 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Added
+- **New Match view**, laid out like a phone app: a scoreboard (kills, item gold of both teams and the lead,
+  dragons with their types, towers, grubs, heralds, barons) and tabs:
+  - *Now*: next item with a progress bar and what to buy right now, ability levels with the next skill-up,
+    your KDA/CS/gold/vision and the lane duel (gold, CS, level, kills against your lane opponent);
+  - *Enemies*: every enemy in detail — items with names and prices, the stats their items give and what to do
+    about it (armor → penetration, healing → anti-heal…), spells, keystone, rank and a comparison with you;
+  - *Teams*: both teams as a table (rank, level, KDA, CS and CS/min, item gold, vision, items), sortable;
+  - *Charts*: gold lead over time with dragons and barons marked, team gold, kills, item gold per player and
+    a kill/objective feed.
+- **Simulated match**: "Show a simulated match" in the Match view (and a switch in *Settings*) plays an invented
+  5v5 game, 5× faster, so the Match view, charts and player profiles can be seen without playing; a banner with
+  "Stop simulation" turns it off. Nothing is recorded, the widget stays hidden, and a real match ends it.
+- **Player sheet**: click any player (in a match or in a past game) to see what they have and, from the client,
+  their rank, recent results, win rate on the champion, main champions and roles, play style and last games.
+- **Full match history from the League client** (every mode: ranked, normal, ARAM, Arena…), stored locally and
+  downloaded only once per game. History view: account profile with ranks, overview with charts (win-rate
+  trend, KDA per game, game types, roles), matches filtered by type and sorted (newest, KDA, length, by
+  champion, grouped by game type) with both teams, team gold lead and you-vs-lane-opponent gold per game,
+  per-champion results, and the matches recorded by the app (Learning).
+- **Play-style analysis**: aggressive/passive, deaths, farming, kill participation, damage share, vision,
+  one-trick or wide pool — each with a hint what to work on.
+- **Per-account data**: every League account logged in on the computer has its own champion pool, counter
+  overrides, Flash key, recorded matches and history cache (`profiles/<puuid>` in the user data folder).
+  Existing settings and history move to the first account that logs in.
+
+### Changed
+- The build and counter-picks also learn from the client's match history (role-based Summoner's Rift games),
+  not only from matches recorded by the app.
+- Recorded matches keep the item gold of both teams per minute.
+
 ## [0.9.1] - 2026-10-26
 
 ### Fixed

@@ -10,10 +10,19 @@ const DRAFT = `(() => { const s = window.lolhelper.state.manual;
   s.myTeam = ['Sion', 'Warwick', 'Akali', 'Kalista', 'Teemo']; s.theirTeam = ['Garen', 'XinZhao', 'Vex', 'Ezreal', 'Zyra']; s.myRole = 'MIDDLE';
   window.lolhelper.navigate('build'); setTimeout(() => window.lolhelper.navigate('draft'), 100); })()`;
 
+// The n-th tab of the segmented control (Match and History views).
+const seg = (n) => `document.querySelectorAll('.segmented .seg')[${n}] && document.querySelectorAll('.segmented .seg')[${n}].click()`;
 const STEPS = [
   ['draft', DRAFT],
   ['live', click('[data-view=live]')],
-  ['history', `${click('[data-view=history]')}; setTimeout(() => document.querySelector('.hist-main') && document.querySelector('.hist-main').click(), 300)`],
+  ['live-enemies', seg(1)],
+  ['live-teams', seg(2)],
+  ['player', "document.querySelector('.prow:not(.phead)') && document.querySelector('.prow:not(.phead)').click()"],
+  ['live-charts', `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); ${seg(3)}`],
+  ['history', click('[data-view=history]')],
+  ['history-matches', `${seg(1)}; setTimeout(() => document.querySelector('.match-main') && document.querySelector('.match-main').click(), 300)`],
+  ['history-champions', seg(2)],
+  ['history-learning', `${seg(3)}; setTimeout(() => document.querySelector('.hist-main') && document.querySelector('.hist-main').click(), 300)`],
   ['build', "window.lolhelper.state.buildTarget = { championId: 'XinZhao', enemyId: 'Warwick', role: 'JUNGLE' }; window.lolhelper.navigate('build')"],
   ['champions', click('[data-view=champions]')],
   ['champion', click('.champ-card')],

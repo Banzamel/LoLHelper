@@ -18,6 +18,12 @@ const { LiveClient } = require('./lcu/liveclient');
 const { setupAppUpdater } = require('./app-updater');
 const { Overlay } = require('./overlay');
 const { History, MatchRecorder } = require('./history');
+const demoMatch = require('./demo');
+const { normalize } = require('./lcu/liveclient');
+const { MatchStore, syncMatches, matchDetail, fetchPlayer } = require('./lcu/matches');
+const { rankFrom } = require('./lcu/roster');
+const { analyzeGames } = require('./engine/style');
+const { learningHistory } = require('./engine/history');
 
 // Development: LOLHELPER_USERDATA=<dir> keeps settings, history and data apart from the real ones.
 if (process.env.LOLHELPER_USERDATA) app.setPath('userData', process.env.LOLHELPER_USERDATA);
@@ -34,9 +40,13 @@ let db = null;
 let settings = null;
 const send = (channel, payload) => { if (win && !win.isDestroyed()) win.webContents.send(channel, payload); };
 let devRoster = null;
-const live = new LiveClient(() => db, () => devRoster || watcher.roster);
+// Simulated match ({ startedAt }) while the player looks at the Match view without playing.
+let demo = null;
+const live = new LiveClient(() => db, () => (demo ? demoMatch.roster() : devRoster || watcher.roster));
 const recorder = new MatchRecorder();
 live.on('game', (game) => {
+  // A simulated match is only shown: never recorded and never over the desktop as a widget.
+  if (demo) { send('live:game', game && { ...game, demo: true }); return; }
   if (game && game.me) recorder.update(game, watcher.mode);
   send('live:game', game);
   if (overlay) {
@@ -50,6 +60,9 @@ const watcher = new LcuWatcher({
   getDb: () => db,
   send,
   onPhase: (phase) => {
+    // A real match ends the simulation; otherwise the simulation keeps running whatever the client does.
+    if (demo && phase === 'InProgress') stopDemo();
+    if (demo) return;
     if (phase === 'EndOfGame' || (['None', 'Lobby'].includes(phase) && recorder.match)) finishMatch();
     if (process.env.LOLHELPER_LIVE) return; // development: polling is forced on, see below
     if (phase === 'InProgress' && watcher.supported) live.start();
@@ -59,6 +72,86 @@ const watcher = new LcuWatcher({
 let updater = null;
 let overlay = null;
 let history = null;
+const matches = new MatchStore();
+// The League account logged in to the client (or the last one seen, while offline).
+let profile = null;
+let syncing = false;
+
+// Everything the engine learns from: the app's own records plus the client's match history.
+const learnFrom = () => (profile ? learningHistory(db, history.list(), matches.list(), profile.puuid) : history.list());
+
+// Switches settings, history and the match cache to the account's own folder.
+function activateProfile(account) {
+  const dir = path.join(app.getPath('userData'), 'profiles', account.puuid.replace(/[^\w-]/g, ''));
+  const changed = !profile || profile.puuid !== account.puuid;
+  let saved = {};
+  try { saved = JSON.parse(fs.readFileSync(path.join(dir, 'account.json'), 'utf8')); } catch { /* new account */ }
+  profile = { ...saved, ...(changed ? {} : profile), ...account };
+  if (changed) {
+    settings.useProfile(dir);
+    history.use(dir, app.getPath('userData'));
+    matches.use(dir);
+  }
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'account.json'), JSON.stringify(profile));
+  const { puuid, gameName, tagLine } = profile;
+  if (!settings.get('lastProfile') || settings.get('lastProfile').puuid !== puuid) settings.set({ lastProfile: { puuid, gameName, tagLine } });
+  send('profile:changed', { profile, settings: settings.get(), history: history.list() });
+}
+
+// The logged-in account: name, level, icon and ranks; then its match history is refreshed.
+async function loadAccount() {
+  let me = null;
+  try { me = await watcher.lcu.get('/lol-summoner/v1/current-summoner'); } catch { /* client still starting */ }
+  if (!me || !me.puuid) { setTimeout(() => { if (watcher.status.connected) loadAccount(); }, 5000); return; }
+  let ranked = null;
+  try { ranked = await watcher.lcu.get('/lol-ranked/v1/current-ranked-stats'); } catch { /* unranked or unavailable */ }
+  activateProfile({
+    puuid: me.puuid, gameName: me.gameName || me.displayName || '', tagLine: me.tagLine || '',
+    level: me.summonerLevel || null, icon: me.profileIconId || null,
+    ranks: ranked ? { solo: rankFrom(ranked, 'RANKED_SOLO_5x5'), flex: rankFrom(ranked, 'RANKED_FLEX_SR') } : null,
+  });
+  refreshMatches();
+}
+
+async function refreshMatches({ deep = false } = {}) {
+  if (!profile || !db || syncing || !watcher.status.connected) return;
+  syncing = true;
+  send('matches:sync', { syncing: true });
+  try { await syncMatches(watcher.lcu, db, matches, profile.puuid, { deep }); } catch (e) { console.error('[matches]', e.message); }
+  syncing = false;
+  send('matches:sync', { syncing: false, lastSync: matches.lastSync });
+  send('matches:updated');
+}
+
+const matchesPayload = () => ({
+  games: matches.list(),
+  analysis: profile ? analyzeGames(matches.list(), profile.puuid) : null,
+  lastSync: matches.lastSync,
+  syncing,
+});
+
+const demoTime = () => Math.min(demoMatch.END, demoMatch.START + ((Date.now() - demo.startedAt) / 1000) * demoMatch.SPEED);
+
+// Starts the simulated match (refused while a real one runs). The first minutes are filled
+// in at once, so the charts have a history from the start.
+function startDemo() {
+  if (!db || (!demo && live.game && live.game.me)) return false;
+  demo = { startedAt: Date.now() };
+  live.simulate(() => demoMatch.snapshot(db, demoTime()));
+  for (let t = 30; t < demoMatch.START; t += 20) live.track(normalize(demoMatch.snapshot(db, t), db, demoMatch.roster()));
+  live.start();
+  send('demo:state', true);
+  return true;
+}
+
+function stopDemo() {
+  if (!demo) return;
+  demo = null;
+  live.simulate(null);
+  send('demo:state', false);
+  if (process.env.LOLHELPER_LIVE || (watcher.phase === 'InProgress' && watcher.supported)) live.start();
+}
 
 // Saves the finished match with its result (end-of-game stats, else the live GameEnd event).
 async function finishMatch() {
@@ -70,6 +163,8 @@ async function finishMatch() {
   const role = (me && me.position) || (me && db.byId[me.championId] ? db.byId[me.championId].positions[0] : null);
   const entry = recorder.finish(db, eog, role);
   if (entry && history.add(entry)) send('history:updated', history.list());
+  // The client lists the game in its match history a moment after it ends.
+  setTimeout(() => refreshMatches(), 15000);
 }
 
 function loadDb() {
@@ -129,7 +224,9 @@ function registerIpc() {
     languages: Object.keys(DATA_LOCALES),
     version: app.getVersion(),
     hasDatabase: !!db,
-    game: live.game,
+    game: live.game && demo ? { ...live.game, demo: true } : live.game,
+    demo: !!demo,
+    profile,
     update: updater.status(),
     ...watcher.snapshot(),
   }));
@@ -161,10 +258,10 @@ function registerIpc() {
     pool: settings.get('pool'),
     overrides: settings.get('counterOverrides'),
     mastery: watcher.mastery,
-    history: history.list(),
+    history: learnFrom(),
     pickableIds: opts.useClient ? watcher.pickable : null,
   }));
-  ipcMain.handle('engine:build', async (_e, opts) => withClientRunes(recommendBuild(db, { ...opts, history: history.list() })));
+  ipcMain.handle('engine:build', async (_e, opts) => withClientRunes(recommendBuild(db, { ...opts, history: learnFrom() })));
   ipcMain.handle('engine:matchups', (_e, id) => championMatchups(db, id, settings.get('counterOverrides')));
   ipcMain.handle('engine:inferRoles', (_e, picks) => inferRoles(db, picks));
 
@@ -184,6 +281,21 @@ function registerIpc() {
   ipcMain.handle('history:list', () => history.list());
   ipcMain.handle('history:remove', (_e, id) => { history.remove(id); return history.list(); });
   ipcMain.handle('history:clear', () => { history.clear(); return history.list(); });
+
+  ipcMain.handle('matches:list', () => matchesPayload());
+  ipcMain.handle('matches:sync', async () => { await refreshMatches({ deep: true }); return matchesPayload(); });
+  ipcMain.handle('matches:detail', (_e, id) => matchDetail(watcher.status.connected ? watcher.lcu : null, db, matches, id));
+  ipcMain.handle('demo:start', () => startDemo());
+  ipcMain.handle('demo:stop', () => { stopDemo(); return false; });
+  ipcMain.handle('player:get', async (_e, puuid) => {
+    if (String(puuid).startsWith('demo-')) {
+      const data = demoMatch.player(db, puuid);
+      return { ...data, analysis: analyzeGames(data.games, puuid) };
+    }
+    if (!watcher.status.connected) throw new Error('LCU not connected');
+    const data = await fetchPlayer(watcher.lcu, db, puuid);
+    return { ...data, analysis: analyzeGames(data.games, puuid) };
+  });
 
   ipcMain.handle('update:check', () => updater.check());
   ipcMain.handle('update:download', () => updater.download());
@@ -213,6 +325,9 @@ app.whenReady().then(() => {
   settings = new Settings(app.getPath('userData'));
   history = new History(app.getPath('userData'));
   loadDb();
+  // Offline, the last account seen in the client is shown until the client says otherwise.
+  if (settings.get('lastProfile')) activateProfile(settings.get('lastProfile'));
+  watcher.lcu.on('status', (s) => { if (s.connected) loadAccount(); });
   protocol.handle('app', (request) => {
     const url = new URL(request.url);
     const rel = decodeURIComponent(url.pathname).replace(/^\/+/, '');

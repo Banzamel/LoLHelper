@@ -46,12 +46,22 @@ Swiftplay and Quickplay. ARAM, Blind Pick, rotating modes and custom games are s
   summoner spells by role and an ability max order with a level 1–18 table.
 - **Export runes** (saved and selected in the client) and **set summoner spells** during champion select.
 
-### Match history
-- Every finished match is saved with its result, purchase timeline and both teams (History view).
-- The build learns from it: items you won with in similar matches gain value, items from losses lose it.
+### Match history and play style
+- The whole match history of the logged-in account is downloaded from the League client (every mode) and kept
+  locally, so each game is fetched only once. Several accounts on one computer each have their own history,
+  champion pool and settings.
+- Overview with charts (win-rate trend, KDA, game types, roles), matches filtered by type and sorted, both teams
+  and the gold lead of every game, results per champion, and a play-style analysis with hints.
+- Every match the app follows is also recorded with its purchase timeline. The build learns from both: items you
+  won with in similar matches gain value, items from losses lose it.
 
 ### Live match
-- While the game runs, the app reads the Live Client Data API: both teams with Riot IDs, levels, KDA, CS and items.
+- While the game runs, the app reads the Live Client Data API: both teams with Riot IDs, levels, KDA, CS and items,
+  objectives and a kill feed. The Match view has a scoreboard and tabs: what to do now, every enemy in detail
+  (items, stats, what to counter), both teams as a table, real-time charts (gold lead, team gold, kills) and runes.
+- Click any player to open their profile: rank, recent results, champions, roles and play style.
+- **Simulated match**: *Show a simulated match* (Match view, or the switch in *Settings*) plays an invented game so you
+  can try all of this without playing; *Stop simulation* turns it off. Nothing from it is recorded.
 - Roles picked in draft and every player's **rank** (tier, division, LP, season winrate — Flex in Flex games,
   Solo/Duo otherwise) come from the League client. Riot hides names in ranked champion select, so ranks appear
   once the game starts. The widget shows the lane opponent's rank.
@@ -95,11 +105,11 @@ history apart from the real ones.
 | Path | Contents |
 |---|---|
 | `src/main/main.js` | Electron main process: window, `app://` protocol, IPC |
-| `src/main/lcu/` | League client connection: credentials, REST + WebSocket, champion select, item sets, rune pages and spells, Live Client Data API |
+| `src/main/lcu/` | League client connection: credentials, REST + WebSocket, champion select, item sets, rune pages and spells, match history (`matches.js`), Live Client Data API |
 | `src/main/app-updater.js` | Self-update from GitHub Releases (electron-updater) |
 | `src/main/overlay.js` | In-game overlay widget window, hotkeys and visibility |
 | `src/main/data/` | Database builder (Data Dragon + Meraki), text parsing, data store |
-| `src/main/engine/` | Counter scoring, item builds, runes/spells/skills (`loadout.js`), in-game adjustments (`live.js`), role inference, curated `knowledge.js` |
+| `src/main/engine/` | Counter scoring, item builds, runes/spells/skills (`loadout.js`), in-game adjustments (`live.js`), learning from history (`history.js`), play-style analysis (`style.js`), role inference, curated `knowledge.js` |
 | `src/renderer/` | UI (vanilla JS modules + CSS), `lang/*.json` translations |
 | `scripts/` | Data download, icon generation, versioning, installer hooks |
 | `test/` | Engine tests |
