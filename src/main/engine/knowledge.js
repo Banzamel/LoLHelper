@@ -199,4 +199,15 @@ const BRIEFS = {
   Singed: 'brief.champ.Singed',
 };
 
-module.exports = { COUNTERS, ARCH_BEATS, BRIEFS };
+// Keystones with curated tips, by Data Dragon rune key (the same in every language). Each key K
+// needs rune.use.K (how to play it) and rune.watch.K (how to play against it) in every lang file;
+// a keystone missing here (a new one) shows only its Data Dragon description.
+const KEYSTONE_TIPS = [
+  'Electrocute', 'DarkHarvest', 'HailOfBlades',
+  'GlacialAugment', 'UnsealedSpellbook', 'FirstStrike',
+  'PressTheAttack', 'LethalTempo', 'FleetFootwork', 'Conqueror',
+  'GraspOfTheUndying', 'Aftershock', 'Guardian',
+  'SummonAery', 'ArcaneComet', 'PhaseRush', 'DeathfireTouch',
+];
+
+module.exports = { COUNTERS, ARCH_BEATS, BRIEFS, KEYSTONE_TIPS };

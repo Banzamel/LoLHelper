@@ -1,9 +1,11 @@
 // Rune page, summoner spells and skill order panels, with export to the client.
 // Shared by the Build, Draft and in-game views; with `current` (the player's own runes and
-// spells) each panel also says whether the choice matches the recommendation.
+// spells) each panel also says whether the choice matches the recommendation; with `guide`
+// (views/runes.js) the rune panel adds the keystone tip and the enemies' keystones.
 import { t } from '../js/i18n.js';
 import { state, champ, rune, asset } from '../js/store.js';
 import { el, runeIcon, summonerIcon, toast, confirmDialog } from '../js/ui.js';
+import { keystoneTip, watchList } from './runes.js';
 
 const cleanError = (err) => err.message.replace(/^Error invoking remote method '[^']+': /, '');
 
@@ -63,7 +65,16 @@ function currentSpells(rec, cur) {
     cur.map((id, i) => el('span', { class: 'spell-slot' }, summonerIcon(id), el('kbd', {}, i ? 'F' : 'D'))), verdictChip(v));
 }
 
-function runePage(runes) {
+// A rune with its Data Dragon short description as a secondary line (line breaks of the
+// description flattened; the icon tooltip shows it in full).
+function runeCell(id) {
+  const r = rune(id) || {};
+  return el('div', { class: 'rune-cell' }, runeIcon(id),
+    el('div', { class: 'rune-text' }, el('span', {}, r.name || ''),
+      r.description ? el('span', { class: 'rune-desc', html: r.description.replace(/<br\s*\/?>/gi, ' ') }) : null));
+}
+
+function runePage(runes, guide) {
   const ids = runes.selectedPerkIds;
   const primary = rune(runes.primaryStyleId);
   const sub = rune(runes.subStyleId);
@@ -72,9 +83,10 @@ function runePage(runes) {
   return el('div', { class: 'rune-page' },
     el('div', { class: 'rune-col' }, treeHead(primary),
       el('div', { class: 'keystone' }, runeIcon(ids[0], { size: 'lg' }), el('strong', {}, keystone ? keystone.name : '')),
-      el('div', { class: 'rune-row' }, ids.slice(1, 4).map((id) => el('div', { class: 'rune-cell' }, runeIcon(id), el('span', {}, (rune(id) || {}).name || ''))))),
+      guide ? keystoneTip(guide.tips[ids[0]]) : null,
+      el('div', { class: 'rune-row' }, ids.slice(1, 4).map(runeCell))),
     el('div', { class: 'rune-col' }, treeHead(sub),
-      el('div', { class: 'rune-row' }, ids.slice(4, 6).map((id) => el('div', { class: 'rune-cell' }, runeIcon(id), el('span', {}, (rune(id) || {}).name || '')))),
+      el('div', { class: 'rune-row' }, ids.slice(4, 6).map(runeCell)),
       el('div', { class: 'shards' }, ids.slice(6).map((id) => el('div', { class: 'rune-cell' }, runeIcon(id, { size: 'sm' }), el('span', {}, t(`shard.${id}`)))))));
 }
 
@@ -100,13 +112,14 @@ export function skillsPanel(build, { level = null } = {}) {
 }
 
 // parts: which panels to show — the Draft view needs runes and spells only.
-export function loadoutPanels(build, { inChampSelect = state.lcu.connected && !!state.draft, current = null, parts = ['runes', 'spells', 'skills'] } = {}) {
+export function loadoutPanels(build, { inChampSelect = state.lcu.connected && !!state.draft, current = null, parts = ['runes', 'spells', 'skills'], guide = null } = {}) {
   const connected = state.lcu.connected;
   const runesPanel = build.runes && parts.includes('runes') ? el('section', { class: 'panel build-section' },
     el('div', { class: 'panel-title' }, el('h2', {}, t('loadout.runes')), el('div', { class: 'spacer' }),
       el('button', { class: 'btn small primary', disabled: connected ? null : true, title: connected ? null : t('build.needClient'), onClick: () => exportRunes(build) }, t('loadout.exportRunes'))),
     current ? currentRunes(build.runes, current.runes) : null,
-    runePage(build.runes),
+    runePage(build.runes, guide),
+    guide ? watchList(guide.enemies) : null,
     build.runes.reasons.length ? el('div', { class: 'chips' }, build.runes.reasons.map((k) => el('span', { class: 'chip' }, t(k)))) : null) : '';
   const spellsPanel = parts.includes('spells') ? el('section', { class: 'panel build-section' },
     el('div', { class: 'panel-title' }, el('h2', {}, t('loadout.spells')), el('div', { class: 'spacer' }),

@@ -24,11 +24,18 @@ const MAX_ORDER = {
   Janna: 'EWQ', Soraka: 'WQE', Nami: 'WEQ', Sona: 'QWE', Yuumi: 'EQW',
 };
 
-function tune(preset, cls, role, laner, t) {
+// The class preset adjusted for the role only (no matchup), as a fresh copy.
+function rolePreset(cls, role) {
+  const preset = PRESETS[cls];
   const p = { ...preset, rows: [...preset.rows], subRunes: [...preset.subRunes], shards: [...preset.shards] };
+  if (role === 'JUNGLE' && cls === 'tank') Object.assign(p, { keystone: 'Aftershock', rows: ['Font of Life', 'Bone Plating', 'Unflinching'] });
+  return p;
+}
+
+function tune(cls, role, laner, t) {
+  const p = rolePreset(cls, role);
   const reasons = [];
   const melee = ['bruiser', 'ap-bruiser', 'tank', 'assassin-ad'].includes(cls);
-  if (role === 'JUNGLE' && cls === 'tank') Object.assign(p, { keystone: 'Aftershock', rows: ['Font of Life', 'Bone Plating', 'Unflinching'] });
   if (cls === 'marksman' && t.tanks >= 0.35) { p.rows[2] = 'Cut Down'; reasons.push('loadout.cutDown'); }
   if (cls === 'marksman' && laner && laner.attackType === 'MELEE' && laner.archetypes.some((a) => ['ASSASSIN', 'DIVER'].includes(a))) {
     p.keystone = 'Fleet Footwork'; reasons.push('loadout.fleet');
@@ -105,7 +112,7 @@ function skillOrder(champ, cls) {
 }
 
 function recommendLoadout(db, { champ, cls, role, laner, threats }) {
-  const { p, reasons } = tune(PRESETS[cls], cls, role, laner, threats);
+  const { p, reasons } = tune(cls, role, laner, threats);
   const runes = db.runes.trees.length ? resolveRunes(db, p) : null;
   const spells = pickSpells(cls, role, laner, threats);
   const byKey = Object.fromEntries(db.summoners.map((s) => [s.key, s]));
@@ -114,6 +121,16 @@ function recommendLoadout(db, { champ, cls, role, laner, threats }) {
     spells: { ids: spells.spells.map((k) => (byKey[k] ? byKey[k].id : null)).filter(Boolean), reason: spells.reason },
     skills: skillOrder(champ, cls),
   };
+}
+
+// The keystone id a champion of this class typically plays in the role (the preset without
+// matchup tweaks), resolved like the full page; null without rune data.
+function typicalKeystone(db, cls, role) {
+  const { tree: treeName, keystone } = rolePreset(cls, role);
+  const trees = db.runes.trees;
+  const tree = trees.find((x) => x.nameEn === treeName) || trees[0];
+  if (!tree) return null;
+  return (tree.slots[0].find((r) => r.nameEn === keystone) || tree.slots[0][0]).id;
 }
 
 // Of the pages the client recommends, the one closest to the matchup-tuned page: same
@@ -125,4 +142,4 @@ function closestPage(pages, ours) {
   return pages.reduce((best, p) => (!best || score(p) > score(best) ? p : best), null);
 }
 
-module.exports = { recommendLoadout, closestPage };
+module.exports = { recommendLoadout, closestPage, typicalKeystone };

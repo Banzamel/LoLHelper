@@ -11,6 +11,7 @@ const { suggestCounters, championMatchups } = require('./engine/counters');
 const { recommendBuild } = require('./engine/builds');
 const { inferRoles } = require('./engine/roles');
 const { teamNotes } = require('./engine/team');
+const { runeGuide } = require('./engine/runes');
 const { LcuWatcher } = require('./lcu/watcher');
 const { exportItemSet } = require('./lcu/itemsets');
 const { exportRunePage, exportSummonerSpells, recommendedPages } = require('./lcu/perks');
@@ -274,6 +275,7 @@ function registerIpc() {
   ipcMain.handle('engine:matchups', (_e, id) => championMatchups(db, id, settings.get('counterOverrides')));
   ipcMain.handle('engine:inferRoles', (_e, picks) => inferRoles(db, picks));
   ipcMain.handle('engine:team', (_e, opts) => teamNotes(db, opts));
+  ipcMain.handle('engine:runes', (_e, opts) => runeGuide(db, opts));
 
   ipcMain.handle('lcu:export', async (_e, { build, title, blockNames }) => {
     const champ = db.byId[build.championId];

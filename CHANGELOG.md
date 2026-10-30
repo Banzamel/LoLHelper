@@ -7,6 +7,13 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Added
+- **Rune guide**: every keystone has a short tip on how to use it and what to watch out for when an enemy plays it,
+  in Polish and English; the other runes show their short description in the rune panel. Draft shows the tip for
+  the recommended keystone and the lane opponent's typical keystone (predicted from the champion, marked
+  *typical*); the loading screen shows the lane opponent's typical keystone; in a match the Runes tab and every
+  enemy card show the enemies' real keystones with what to watch out for.
+
 ## [0.11.0] - 2026-10-30
 
 ### Added

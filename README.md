@@ -39,6 +39,8 @@ Swiftplay and Quickplay. ARAM, Blind Pick, rotating modes and custom games are s
 - From three picks on, a **team plan** names your composition (engage, protect the carry, poke, pick, split
   push), says in 2–3 lines how to play it and warns about its gaps (no frontline, one damage type, no engage,
   little crowd control); one line says what the enemy team wants to do.
+- The **rune guide** in the rune panel says how to use the recommended keystone, shows a short description next to
+  every other rune and what to watch out for in your lane opponent's typical keystone (marked *typical*).
 
 ### Build — items against your opponent
 - Starting items, boots (with the tier-3 upgrade), 3 core items in buy order, situational items and a
@@ -66,7 +68,9 @@ Swiftplay and Quickplay. ARAM, Blind Pick, rotating modes and custom games are s
   objectives and a kill feed. The Match view has a scoreboard and tabs: what to do now, every enemy in detail
   (items, stats, what to counter), both teams as a table, real-time charts (gold lead, team gold, kills) and runes.
 - On the **loading screen**, before the game reports data, the Match view shows both teams with roles, ranks and
-  champion briefs, plus the team plan and the tips for playing with your allies.
+  champion briefs, plus the team plan and the tips for playing with your allies, and your lane opponent's typical
+  keystone with what to watch out for.
+- The Runes tab and every enemy card show the enemies' real keystones with what to watch out for.
 - Click any player to open their profile: rank, recent results, champions, roles and play style.
 - **Simulated match**: *Show a simulated match* (Match view, or the switch in *Settings*) plays an invented game so you
   can try all of this without playing; *Stop simulation* turns it off. Nothing from it is recorded.

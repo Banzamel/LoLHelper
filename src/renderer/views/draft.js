@@ -1,6 +1,7 @@
 // Draft view: both teams (live from champion select or set manually), the lane opponent
 // and counter-pick recommendations for the player's role; once the player has a champion,
-// the runes, spells and starting items for it (compared with what is set in the client).
+// the runes, spells and starting items for it (compared with what is set in the client), with
+// how to use the keystone and what to watch out for in the lane opponent's typical keystone.
 // Every picked champion carries a short brief, allies get tips on how to play with them, and
 // from three picks on a team plan says what the composition wants to do.
 import { t } from '../js/i18n.js';
@@ -9,6 +10,7 @@ import { el, champIcon, itemIcon, roleIcon, ROLES, scoreRing, reasonChip, pickCh
 import { loadoutPanels } from './loadout.js';
 import { recordChip } from './history.js';
 import { loadTeamNotes, briefLine, teamTipsPanel, compositionPanel } from './team.js';
+import { loadRuneGuide } from './runes.js';
 import { navigate } from '../js/app.js';
 
 let lastQuery = '';
@@ -119,7 +121,15 @@ async function loadSetup(model, opponent, championId) {
   return lastSetup;
 }
 
-function setupSection(build, model, me) {
+// The tip for the recommended keystone and the lane opponent's typical keystone (no enemy runes in Draft).
+function loadDraftGuide(build, model, opponent) {
+  return loadRuneGuide({
+    keystones: build.runes ? [build.runes.selectedPerkIds[0]] : [],
+    enemies: opponent ? [{ championId: opponent, role: model.myRole }] : [],
+  });
+}
+
+function setupSection(build, model, me, guide) {
   const current = model.live && state.draft ? { runes: state.draft.myRunes, spells: me.spells } : null;
   return el('section', { class: 'panel gold draft-setup' },
     el('div', { class: 'panel-title' }, champIcon(build.championId, { size: 'sm' }), el('h2', {}, t('draft.setup')),
@@ -127,7 +137,7 @@ function setupSection(build, model, me) {
       el('span', { class: 'muted' }, t('build.start')),
       el('div', { class: 'build-strip' }, build.starters.map((s) => itemIcon(s.id, { size: 'sm', count: s.count })))),
     el('p', { class: 'muted small' }, t('draft.setupHint', { champion: champ(build.championId).name })),
-    loadoutPanels(build, { current, parts: ['runes', 'spells'] }));
+    loadoutPanels(build, { current, parts: ['runes', 'spells'], guide }));
 }
 
 export function renderDraft(root) {
@@ -198,7 +208,8 @@ async function drawInto(container) {
 
   const me = model.allies.find((a) => a.isMe);
   const myChamp = me && champ(me.championId) ? me.championId : null;
-  const setup = myChamp ? setupSection(await loadSetup(model, opponent, myChamp), model, me) : null;
+  const build = myChamp ? await loadSetup(model, opponent, myChamp) : null;
+  const setup = build ? setupSection(build, model, me, await loadDraftGuide(build, model, opponent)) : null;
   const grid = el('div', { class: 'draft-grid' }, allies, center, enemies);
   // Runes and spells go first, so they are visible without scrolling; the team plan and the ally
   // tips are short and only appear once enough champions are picked or some rule applies, so

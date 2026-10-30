@@ -3,7 +3,9 @@
 // (next item, skill, lane duel), the enemies in detail, both teams as a table, charts of the
 // match so far and the rune page. Every player opens a sheet with their profile and history.
 // On the loading screen, before the game reports any data, both teams from the client's
-// roster with champion briefs, the team plan and the tips on playing with each ally.
+// roster with champion briefs, the team plan and the tips on playing with each ally, plus the
+// lane opponent's typical keystone. The rune page and the enemy cards say what to watch out for
+// in each enemy's keystone (engine/runes.js).
 import { t } from '../js/i18n.js';
 import { state, champ, item, asset, subscribe, isSupported } from '../js/store.js';
 import { el, champIcon, itemIcon, roleIcon, rankBadge, runeIcon, summonerIcon, buildOrder, ROLES } from '../js/ui.js';
@@ -14,6 +16,7 @@ import { bought, buildForGame, needsStarters, startersCost, nextSkill } from '..
 import { lineChart, barList, versusBar, fmtMinutes, fmtGold, COLORS } from '../js/charts.js';
 import { setDemo } from '../js/app.js';
 import { loadTeamNotes, briefLine, teamTipsPanel, compositionPanel } from './team.js';
+import { loadRuneGuide, watchLine } from './runes.js';
 
 const TABS = ['now', 'enemies', 'teams', 'charts', 'runes'];
 // View state that survives the redraws of a running match.
@@ -168,7 +171,9 @@ function enemyTips(stats, game) {
   return tips;
 }
 
-function enemyDetail(p, game, opp) {
+function enemyDetail(p, game, data) {
+  const opp = data.opp;
+  const keystone = data.guide.enemies.find((e) => e.championId === p.championId);
   const c = champ(p.championId);
   const s = p.scores || {};
   const stats = itemStats(p.items);
@@ -184,6 +189,7 @@ function enemyDetail(p, game, opp) {
           rankBadge(p.rank), p.dead ? el('span', { class: 'chip minus' }, t('live.respawn', { n: p.respawn })) : null)),
       el('div', { class: 'enemy-loadout' }, (p.spells || []).map((id) => summonerIcon(id)), p.keystone ? runeIcon(p.keystone) : null),
       el('button', { class: 'btn small', onClick: () => openPlayer(p, { ally: false }) }, t('live.openProfile'))),
+    keystone && keystone.watch ? el('div', { class: 'card enemy-keystone' }, el('div', { class: 'card-kicker' }, t('rune.watchOut')), watchLine(keystone)) : null,
     el('div', { class: 'stat-tiles' },
       statTile('KDA', kdaText(s.kills || 0, s.deaths || 0, s.assists || 0), { sub: kdaRatio(s.kills || 0, s.deaths || 0, s.assists || 0) }),
       statTile('CS', String(s.creepScore || 0), { sub: t('live.perMin', { n: csPerMin(p, game) }) }),
@@ -207,7 +213,7 @@ function enemiesTab(game, data) {
       class: `enemy-pick ${e === focus ? 'active' : ''} ${e.dead ? 'dead' : ''}`, onClick: () => { ui.focus = e.name; repaint(); },
     }, champIcon(e.championId, { size: 'sm' }), el('span', {}, e.position ? roleIcon(e.position) : null, champ(e.championId) ? champ(e.championId).name : ''),
       el('span', { class: 'muted small' }, fmtGold(e.itemGold))))),
-    focus ? enemyDetail(focus, game, data.opp) : null);
+    focus ? enemyDetail(focus, game, data) : null);
 }
 
 // ---- Teams ------------------------------------------------------------------------------
@@ -303,11 +309,19 @@ function chartsTab(game) {
 let current = null;
 let repaint = () => {};
 
+// The tip for the recommended keystone and every enemy's real keystone from the match.
+function gameGuideQuery(game, build) {
+  return {
+    keystones: build.runes ? [build.runes.selectedPerkIds[0]] : [],
+    enemies: game.enemies.map((e) => ({ championId: e.championId, role: e.position, keystone: e.keystone })),
+  };
+}
+
 function paint(container) {
   const { game, data } = current;
   const me = champ(game.me.championId);
   const body = { now: nowTab, enemies: enemiesTab, teams: teamsTab, charts: chartsTab, runes: () => el('div', { class: 'tab-body' },
-    loadoutPanels(data.build, { inChampSelect: false, current: { runes: game.me.runes, spells: game.me.spells }, parts: ['runes', 'spells'] })) }[ui.tab](game, data);
+    loadoutPanels(data.build, { inChampSelect: false, current: { runes: game.me.runes, spells: game.me.spells }, parts: ['runes', 'spells'], guide: data.guide })) }[ui.tab](game, data);
   container.replaceChildren(
     game.demo ? el('div', { class: 'demo-banner' }, el('strong', {}, t('demo.banner')), el('span', { class: 'muted small' }, t('demo.bannerHint')),
       el('div', { class: 'spacer' }), el('button', { class: 'btn small', onClick: () => setDemo(false) }, t('demo.stop'))) : null,
@@ -343,7 +357,14 @@ function rosterQuery({ me, first, second }) {
   return { me: pick(me), allies: first.players.filter((p) => p !== me).map(pick), enemies: second.players.map(pick) };
 }
 
-function rosterCard({ players, title, ally }, notes, me) {
+// The lane opponent's typical keystone (the client does not show enemy runes before the game);
+// no opponent without the player or their position.
+function rosterGuideQuery({ me, second }) {
+  const opponent = me && me.position ? second.players.find((p) => p.position === me.position) : null;
+  return { keystones: [], enemies: opponent ? [{ championId: opponent.championId, role: opponent.position }] : [] };
+}
+
+function rosterCard({ players, title, ally }, notes, me, guide) {
   return el('section', { class: `card team-card ${ally ? 'ally' : 'enemy'}` },
     el('div', { class: 'team-head' }, el('h2', { class: ally ? 'ally-title' : 'enemy-title' }, title)),
     el('div', { class: 'roster-list' }, players.map((p) => {
@@ -354,18 +375,19 @@ function rosterCard({ players, title, ally }, notes, me) {
             p.position ? el('span', { class: 'role-badge' }, roleIcon(p.position), t(`role.${p.position}`)) : null,
             p === me ? el('span', { class: 'chip teal' }, t('draft.you')) : null,
             rankBadge(p.rank, { compact: true })),
-          briefLine(notes.briefs[p.championId])));
+          briefLine(notes.briefs[p.championId]),
+          ally ? null : watchLine(guide.enemies.find((e) => e.championId === p.championId))));
     })));
 }
 
-function loadingState(container, sides, notes) {
+function loadingState(container, sides, notes, guide) {
   container.replaceChildren(
     el('div', { class: 'view-head' }, el('h1', {}, t('live.title')), el('span', { class: 'chip teal' }, t('live.loading')),
       el('span', { class: 'muted small' }, t('live.loadingHint'))),
     // Without the player both sides are sent as enemies (rosterQuery), so there is no own plan.
     (sides.me && compositionPanel(notes)) || '',
     teamTipsPanel(notes) || '',
-    el('div', { class: 'roster-grid' }, rosterCard(sides.first, notes, sides.me), rosterCard(sides.second, notes, sides.me)));
+    el('div', { class: 'roster-grid' }, rosterCard(sides.first, notes, sides.me, guide), rosterCard(sides.second, notes, sides.me, guide)));
 }
 
 const isLoading = () => state.phase === 'InProgress' && isSupported() && !state.demo && !!(state.roster && state.roster.length);
@@ -394,9 +416,9 @@ export function renderLive(root) {
         lastKey = key;
         current = null;
         const sides = rosterSides(state.roster);
-        const notes = await loadTeamNotes(rosterQuery(sides));
+        const [notes, guide] = await Promise.all([loadTeamNotes(rosterQuery(sides)), loadRuneGuide(rosterGuideQuery(sides))]);
         // The game may have started (or the screen changed) while the notes were loading.
-        if (lastKey === key) loadingState(container, sides, notes);
+        if (lastKey === key) loadingState(container, sides, notes, guide);
         return;
       }
       const key = `none-${isSupported()}-${state.phase}-${state.demo}`;
@@ -414,6 +436,7 @@ export function renderLive(root) {
     if (buildKey !== lastBuildKey || !data) {
       lastBuildKey = buildKey;
       data = await buildForGame(g);
+      data.guide = await loadRuneGuide(gameGuideQuery(g, data.build));
     }
     current = { game: g, data };
     repaint();
