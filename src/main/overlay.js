@@ -38,7 +38,7 @@ class Overlay {
     });
     this.win.setAlwaysOnTop(true, 'screen-saver');
     this.win.setVisibleOnAllWorkspaces(true);
-    this.win.setIgnoreMouseEvents(true);
+    this.win.setIgnoreMouseEvents(true, { forward: true });
     this.win.on('moved', () => this.rememberBounds());
     this.win.on('closed', () => { this.win = null; });
     this.win.webContents.once('did-finish-load', () => this.pushState());
@@ -73,7 +73,8 @@ class Overlay {
     const visible = enabled && !this.userHidden && (this.gameActive || this.moveMode || this.preview);
     if (visible) {
       const win = this.create();
-      win.setIgnoreMouseEvents(!this.moveMode);
+      // Clicks pass through to the game, mouse moves still reach the widget (item name tooltips).
+      win.setIgnoreMouseEvents(!this.moveMode, { forward: true });
       win.setFocusable(this.moveMode);
       if (!win.isVisible()) win.showInactive();
       win.setAlwaysOnTop(true, 'screen-saver');

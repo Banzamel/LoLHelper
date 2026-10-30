@@ -2,10 +2,12 @@
 // items, refreshed from the live match. In move mode the widget can be dragged.
 import { loadLanguage, setChampionResolver, t } from './i18n.js';
 import { state, setDatabase, champ, item, asset } from './store.js';
-import { el, itemIcon, champIcon, rankBadge } from './ui.js';
+import { el, itemIcon as fullItemIcon, champIcon, rankBadge } from './ui.js';
 import { bought, buildForGame, nextSkill, needsStarters, startersCost } from './game.js';
 
 const widget = document.getElementById('widget');
+// Hovering an item shows just its name; the full description would not fit the widget.
+const itemIcon = (id, opts) => fullItemIcon(id, { ...opts, nameOnly: true });
 let ov = { moveMode: false, preview: false, opacity: 0.92 };
 let lastKey = null;
 let couldAfford = false;
@@ -26,6 +28,7 @@ function skillRow(build, level, championId) {
 
 async function draw() {
   widget.style.opacity = String(ov.opacity || 0.92);
+  document.getElementById('tooltip').hidden = true; // the hovered icon is about to be replaced
   widget.classList.toggle('move', !!ov.moveMode);
   const hint = ov.moveMode ? el('div', { class: 'w-hint' }, t('overlay.moveHint', { key: hotkey(state.settings.overlay.moveKey) })) : null;
   const game = state.game;

@@ -87,11 +87,12 @@ export function buildOrder(ids, { owned = [], names = false } = {}) {
   }));
 }
 
-export function itemIcon(id, { size = '', count, onClick } = {}) {
+// nameOnly: a short tooltip with just the name (the small in-game widget).
+export function itemIcon(id, { size = '', count, onClick, nameOnly = false } = {}) {
   const it = item(id);
   const node = el('div', { class: `item-icon ${size}`, onClick }, it ? el('img', { src: asset(it.icon), alt: it.name, loading: 'lazy' }) : null,
     count > 1 ? el('span', { class: 'count' }, String(count)) : null);
-  if (it) attachTooltip(node, () => itemTooltip(it));
+  if (it) attachTooltip(node, () => (nameOnly ? el('div', { class: 'tt-name' }, it.name) : itemTooltip(it)));
   if (onClick) node.style.cursor = 'pointer';
   return node;
 }

@@ -7,6 +7,10 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Fixed
+- In-game widget: hovering an item icon shows its name. The widget still lets clicks through to the game,
+  it now only receives mouse movement.
+
 ## [0.10.0] - 2026-10-28
 
 ### Added
