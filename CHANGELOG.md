@@ -18,6 +18,9 @@ moves them into a numbered section automatically (see README → Versioning).
   (engage and teamfight, protect the carry, poke, pick-offs, split push or mixed), give 2–3 lines on how to play
   it and warn about its gaps (no frontline, almost only physical or magic damage, no engage, little crowd control),
   plus one line on what the enemy team wants to do, in Polish and English.
+- **Last played account at launch**: the History view shows the account last played on this computer with its
+  history and games right after the app starts, marked *Last played account* until the League client connects;
+  then it switches to the account logged in to the client, as before.
 - **Loading screen** in the Match view: once the game starts loading, both teams with roles, ranks and briefs,
   before the game reports any data.
 

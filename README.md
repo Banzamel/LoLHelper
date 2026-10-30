@@ -54,7 +54,8 @@ Swiftplay and Quickplay. ARAM, Blind Pick, rotating modes and custom games are s
 ### Match history and play style
 - The whole match history of the logged-in account is downloaded from the League client (every mode) and kept
   locally, so each game is fetched only once. Several accounts on one computer each have their own history,
-  champion pool and settings.
+  champion pool and settings. At launch, before the client connects, the History view shows the account last
+  played on this computer.
 - Overview with charts (win-rate trend, KDA, game types, roles), matches filtered by type and sorted, both teams
   and the gold lead of every game, results per champion, and a play-style analysis with hints.
 - Every match the app follows is also recorded with its purchase timeline. The build learns from both: items you

@@ -56,7 +56,10 @@ function profileCard() {
   const ranks = p.ranks || {};
   return el('div', { class: 'card profile-card' }, profileIcon(p.icon, 'lg'),
     el('div', { class: 'profile-text' }, el('h2', {}, p.gameName ? `${p.gameName}` : '—', el('span', { class: 'muted' }, p.tagLine ? ` #${p.tagLine}` : '')),
-      el('div', { class: 'chips' }, p.level ? el('span', { class: 'chip' }, t('player.accountLevel', { n: p.level })) : null,
+      el('div', { class: 'chips' },
+        // Without the client this is the account last played on this computer, as saved.
+        state.lcu.connected ? null : el('span', { class: 'chip', title: t('history.lastPlayedHint') }, t('history.lastPlayed')),
+        p.level ? el('span', { class: 'chip' }, t('player.accountLevel', { n: p.level })) : null,
         ranks.solo ? el('span', { class: 'rank-pair' }, el('span', { class: 'muted small' }, t('queue.solo')), rankBadge(ranks.solo)) : null,
         ranks.flex ? el('span', { class: 'rank-pair' }, el('span', { class: 'muted small' }, t('queue.flex')), rankBadge(ranks.flex)) : null),
       el('div', { class: 'muted small' }, m.syncing ? t('history.syncing') : m.lastSync ? t('history.lastSync', { date: fmtDate(Date.parse(m.lastSync)), n: (m.games || []).length }) : t('history.neverSynced'))),

@@ -514,6 +514,8 @@
   "history.tab.learning": "Nauka",
   "history.noProfile": "Nie znamy jeszcze Twojego konta.",
   "history.noProfileHint": "Uruchom klienta League — historia każdego konta zalogowanego na tym komputerze zapisze się osobno.",
+  "history.lastPlayed": "Ostatnio grające konto",
+  "history.lastPlayedHint": "Klient League nie jest połączony — widzisz zapisane dane konta, które ostatnio grało na tym komputerze. Gdy klient się połączy, pokażemy konto, które jest w nim zalogowane.",
   "history.syncing": "Pobieranie historii z klienta…",
   "history.lastSync": "Zsynchronizowano {date} · {n} meczów w pamięci lokalnej",
   "history.neverSynced": "Jeszcze nie pobrano historii z klienta.",

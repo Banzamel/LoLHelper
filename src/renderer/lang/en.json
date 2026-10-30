@@ -514,6 +514,8 @@
   "history.tab.learning": "Learning",
   "history.noProfile": "Your account is not known yet.",
   "history.noProfileHint": "Start the League client — the history of every account logged in on this computer is kept separately.",
+  "history.lastPlayed": "Last played account",
+  "history.lastPlayedHint": "The League client is not connected — this is the saved data of the account last played on this computer. Once the client connects, the account logged in to it is shown.",
   "history.syncing": "Downloading the history from the client…",
   "history.lastSync": "Synced {date} · {n} games stored locally",
   "history.neverSynced": "The history has not been downloaded from the client yet.",

@@ -25,6 +25,7 @@ const { MatchStore, syncMatches, matchDetail, fetchPlayer } = require('./lcu/mat
 const { rankFrom } = require('./lcu/roster');
 const { analyzeGames } = require('./engine/style');
 const { learningHistory } = require('./engine/history');
+const { lastPlayedAccount } = require('./profiles');
 
 // Development: LOLHELPER_USERDATA=<dir> keeps settings, history and data apart from the real ones.
 if (process.env.LOLHELPER_USERDATA) app.setPath('userData', process.env.LOLHELPER_USERDATA);
@@ -33,6 +34,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
 const BUNDLED_DATA = app.isPackaged ? path.join(process.resourcesPath, 'data') : path.join(ROOT, 'resources', 'data');
 const USER_DATA = path.join(app.getPath('userData'), 'data');
+const PROFILES_DIR = path.join(app.getPath('userData'), 'profiles');
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
@@ -74,29 +76,35 @@ let updater = null;
 let overlay = null;
 let history = null;
 const matches = new MatchStore();
-// The League account logged in to the client (or the last one seen, while offline).
+// The League account logged in to the client (or the last one played, until the client says otherwise).
 let profile = null;
 let syncing = false;
 
 // Everything the engine learns from: the app's own records plus the client's match history.
 const learnFrom = () => (profile ? learningHistory(db, history.list(), matches.list(), profile.puuid) : history.list());
 
+const profileDir = (puuid) => path.join(PROFILES_DIR, puuid.replace(/[^\w-]/g, ''));
+
 // Switches settings, history and the match cache to the account's own folder.
-function activateProfile(account) {
-  const dir = path.join(app.getPath('userData'), 'profiles', account.puuid.replace(/[^\w-]/g, ''));
+function switchProfile(account) {
+  const dir = profileDir(account.puuid);
   const changed = !profile || profile.puuid !== account.puuid;
   let saved = {};
   try { saved = JSON.parse(fs.readFileSync(path.join(dir, 'account.json'), 'utf8')); } catch { /* new account */ }
   profile = { ...saved, ...(changed ? {} : profile), ...account };
-  if (changed) {
-    settings.useProfile(dir);
-    history.use(dir, app.getPath('userData'));
-    matches.use(dir);
-  }
+  if (!changed) return;
+  settings.useProfile(dir);
+  history.use(dir, app.getPath('userData'));
+  matches.use(dir);
+}
+
+// The account logged in to the client: switched to and saved with the time it was seen, so the
+// next launch starts with it (profiles.lastPlayedAccount).
+function activateProfile(account) {
+  switchProfile({ ...account, lastSeenAt: new Date().toISOString() });
+  const dir = profileDir(profile.puuid);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'account.json'), JSON.stringify(profile));
-  const { puuid, gameName, tagLine } = profile;
-  if (!settings.get('lastProfile') || settings.get('lastProfile').puuid !== puuid) settings.set({ lastProfile: { puuid, gameName, tagLine } });
   send('profile:changed', { profile, settings: settings.get(), history: history.list() });
 }
 
@@ -327,8 +335,9 @@ app.whenReady().then(() => {
   settings = new Settings(app.getPath('userData'));
   history = new History(app.getPath('userData'));
   loadDb();
-  // Offline, the last account seen in the client is shown until the client says otherwise.
-  if (settings.get('lastProfile')) activateProfile(settings.get('lastProfile'));
+  // Until the client reports the logged-in account, the last one played is shown with its history.
+  const lastPlayed = lastPlayedAccount(PROFILES_DIR);
+  if (lastPlayed) switchProfile(lastPlayed);
   watcher.lcu.on('status', (s) => { if (s.connected) loadAccount(); });
   protocol.handle('app', (request) => {
     const url = new URL(request.url);

@@ -16,8 +16,6 @@ const DEFAULTS = {
   autoOpenDraft: true,
   autoOpenLive: true,
   flashOnD: true,
-  // The account last seen in the client ({ puuid, gameName, tagLine }); its data is shown offline.
-  lastProfile: null,
   overlay: {
     enabled: true,
     opacity: 0.92,
