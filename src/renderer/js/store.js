@@ -27,7 +27,7 @@ export const state = {
   buildTarget: { championId: null, enemyId: null, role: null },
 };
 
-// False only when the client is in a known, unsupported mode (ARAM, blind pick, custom…).
+// False only when the client is in a known, unsupported mode (ARAM, blind pick, custom games off the Rift…).
 export function isSupported() { return !state.mode || state.mode.supported; }
 
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }

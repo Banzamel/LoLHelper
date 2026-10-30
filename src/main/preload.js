@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('api', {
   build: invoke('engine:build'),
   matchups: invoke('engine:matchups'),
   inferRoles: invoke('engine:inferRoles'),
+  setMyRole: invoke('draft:setRole'),
   team: invoke('engine:team'),
   runes: invoke('engine:runes'),
   exportBuild: invoke('lcu:export'),

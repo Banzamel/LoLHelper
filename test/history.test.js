@@ -36,6 +36,24 @@ test('the recorder keeps the purchase timeline and the result', () => {
   assert.strictEqual(new MatchRecorder().finish(db, { gameLength: 1800, teams: [{ isPlayerTeam: true, isWinningTeam: false }] }, 'TOP'), null);
 });
 
+test('a Practice Tool match is not recorded', () => {
+  const r = new MatchRecorder();
+  const practice = { queueId: -1, key: 'practice', supported: true, recorded: false };
+
+  r.update(snapshot([id('Trinity Force')], 1500, 'Win'), practice);
+
+  assert.strictEqual(r.finish(db, null, 'JUNGLE'), null);
+});
+
+test('a custom game is not recorded', () => {
+  const r = new MatchRecorder();
+  const custom = { queueId: -1, key: 'custom', supported: true, recorded: false };
+
+  r.update(snapshot([id('Trinity Force')], 1500, 'Win'), custom);
+
+  assert.strictEqual(r.match, null);
+});
+
 test('items won with in similar matches gain value, lost ones lose it', () => {
   const game = (win, items, opponentId = 'Warwick') => ({ championId: 'XinZhao', opponentId, win, items, enemies: [{ championId: opponentId }] });
   const cleaver = id('Black Cleaver');

@@ -9,7 +9,7 @@ const { resolveDataDir, loadDatabase, compareVersions } = require('./data/store'
 const { buildDatabase, latestVersion } = require('./data/updater');
 const { suggestCounters, championMatchups } = require('./engine/counters');
 const { recommendBuild } = require('./engine/builds');
-const { inferRoles } = require('./engine/roles');
+const { inferRoles, ROLES } = require('./engine/roles');
 const { teamNotes } = require('./engine/team');
 const { runeGuide } = require('./engine/runes');
 const { LcuWatcher } = require('./lcu/watcher');
@@ -59,9 +59,10 @@ live.on('game', (game) => {
   }
 });
 // The Live Client API only exists while a match runs, so poll it during InProgress only,
-// and only in supported modes (role-based Summoner's Rift queues).
+// and only in supported modes (role-based Summoner's Rift queues, Rift custom games, Practice Tool).
 const watcher = new LcuWatcher({
   getDb: () => db,
+  getPuuid: () => (profile ? profile.puuid : null),
   send,
   onPhase: (phase) => {
     // A real match ends the simulation; otherwise the simulation keeps running whatever the client does.
@@ -276,6 +277,10 @@ function registerIpc() {
   ipcMain.handle('engine:inferRoles', (_e, picks) => inferRoles(db, picks));
   ipcMain.handle('engine:team', (_e, opts) => teamNotes(db, opts));
   ipcMain.handle('engine:runes', (_e, opts) => runeGuide(db, opts));
+  ipcMain.handle('draft:setRole', (_e, role) => {
+    if (!ROLES.includes(role)) throw new Error(`Unknown role ${JSON.stringify(role)}, expected one of ${ROLES.join(', ')}`);
+    watcher.setMyRole(role);
+  });
 
   ipcMain.handle('lcu:export', async (_e, { build, title, blockNames }) => {
     const champ = db.byId[build.championId];

@@ -3,7 +3,7 @@
 const { LcuClient } = require('./client');
 const { normalizeSession } = require('./champselect');
 const { modeOf } = require('./queues');
-const { fetchRoster } = require('./roster');
+const { fetchRoster, withMyPosition } = require('./roster');
 const { inferRoles } = require('../engine/roles');
 
 const ROSTER_RETRY_MS = 5000;
@@ -12,9 +12,10 @@ const pageOf = (p) => (p && p.selectedPerkIds && p.selectedPerkIds.length
   ? { name: p.name, primaryStyleId: p.primaryStyleId, subStyleId: p.subStyleId, selectedPerkIds: p.selectedPerkIds } : null);
 
 class LcuWatcher {
-  constructor({ getDb, send, onPhase = () => {} }) {
+  constructor({ getDb, getPuuid = () => null, send, onPhase = () => {} }) {
     this.onPhase = onPhase;
     this.getDb = getDb;
+    this.getPuuid = getPuuid;
     this.send = send;
     this.lcu = new LcuClient();
     this.status = { connected: false };
@@ -22,6 +23,10 @@ class LcuWatcher {
     this.mode = null;
     this.draft = null;
     this.roster = null;
+    // The roster as the client gave it, before the player's role from Draft is filled in.
+    this.clientRoster = null;
+    // The role the player chose in Draft: their position in modes without assigned roles.
+    this.myRole = null;
     this.rosterTimer = null;
     this.mastery = {};
     this.pickable = [];
@@ -32,7 +37,7 @@ class LcuWatcher {
 
   start(leagueDir) { this.lcu.start(leagueDir); }
 
-  // false only when the mode is known and unsupported (ARAM, blind pick, custom…).
+  // false only when the mode is known and unsupported (ARAM, blind pick, custom games off the Rift…).
   get supported() { return !this.mode || this.mode.supported; }
 
   async onStatus(status) {
@@ -92,8 +97,15 @@ class LcuWatcher {
 
   setRoster(roster) {
     if (!roster) clearTimeout(this.rosterTimer);
-    this.roster = roster;
-    this.send('lcu:roster', roster);
+    this.clientRoster = roster;
+    this.roster = withMyPosition(roster, this.getPuuid(), this.myRole);
+    this.send('lcu:roster', this.roster);
+  }
+
+  // The player chose their role in Draft; a roster without their position takes it.
+  setMyRole(role) {
+    this.myRole = role || null;
+    if (this.clientRoster) this.setRoster(this.clientRoster);
   }
 
   async refreshSession(session) {

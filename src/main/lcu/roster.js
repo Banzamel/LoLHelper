@@ -43,4 +43,11 @@ async function fetchRoster(lcu, session, db, queueType) {
   }));
 }
 
-module.exports = { fetchRoster, rankFrom };
+// The roster with the player's position filled in by `role` (the role chosen in Draft) when
+// the game assigns none (Practice Tool, custom games). Other players keep theirs.
+function withMyPosition(roster, puuid, role) {
+  if (!roster || !puuid || !role) return roster;
+  return roster.map((p) => (p.puuid === puuid && !p.position ? { ...p, position: role } : p));
+}
+
+module.exports = { fetchRoster, rankFrom, withMyPosition };

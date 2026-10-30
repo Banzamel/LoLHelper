@@ -40,13 +40,22 @@ function renderNav() {
   }, navIcon(name), el('span', {}, t(`nav.${name}`)))));
 }
 
+// Modes other than a regular queue are named next to the phase.
+const NAMED_MODES = ['practice', 'custom'];
+
+function modeSuffix() {
+  if (!isSupported()) return t('mode.unsupportedShort');
+  return state.mode && NAMED_MODES.includes(state.mode.key) ? t(`mode.${state.mode.key}`) : '';
+}
+
 function renderStatus() {
   const pill = document.getElementById('lcu-status');
   pill.classList.toggle('on', !!state.lcu.connected);
   pill.querySelector('span').textContent = t(state.lcu.connected ? 'status.connected' : 'status.waiting');
   const phase = state.draft && state.draft.phase ? state.draft.phase : state.phase;
   const label = state.demo ? t('demo.pill') : state.lcu.connected && phase && phase !== 'None' ? t(`phase.${phase}`) : '';
-  document.getElementById('game-phase').textContent = label && !isSupported() ? `${label} · ${t('mode.unsupportedShort')}` : label;
+  const suffix = label && modeSuffix();
+  document.getElementById('game-phase').textContent = suffix ? `${label} · ${suffix}` : label;
   document.getElementById('patch').textContent = state.db && state.db.meta ? t('status.patch', { version: state.db.meta.version }) : '';
   const p = state.profile;
   const account = document.getElementById('profile');
@@ -95,6 +104,8 @@ async function boot() {
   state.history = await window.api.listHistory();
   state.matches = await window.api.listMatches();
   setChampionResolver((id) => (champ(id) ? champ(id).name : id));
+  // The player's position in modes without assigned roles comes from the role chosen in Draft.
+  window.api.setMyRole(state.manual.myRole);
   document.querySelectorAll('[data-win]').forEach((b) => b.addEventListener('click', () => window.api.window(b.dataset.win)));
 
   window.api.onLcuStatus((s) => { state.lcu = s; renderStatus(); emit('lcu'); });

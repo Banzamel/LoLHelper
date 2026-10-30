@@ -1,6 +1,7 @@
-// Match history: every supported match the player finishes is saved (champion, role, lane
-// opponent, both teams, items in purchase order, score, result, gold over time) to
-// history.json in the account's profile folder. The engine learns from it (engine/history.js).
+// Match history: every match the player finishes in a recorded mode (role-based queues; not the
+// Practice Tool or custom games) is saved (champion, role, lane opponent, both teams, items in
+// purchase order, score, result, gold over time) to history.json in the account's profile
+// folder. The engine learns from it (engine/history.js).
 const fs = require('fs');
 const path = require('path');
 
@@ -56,9 +57,10 @@ class MatchRecorder {
     this.prevItems = [];
   }
 
-  // game: the normalized live snapshot (liveclient.normalize); mode: watcher mode.
+  // game: the normalized live snapshot (liveclient.normalize); mode: watcher mode. A mode that
+  // is not recorded (Practice Tool, custom games) is not followed; an unknown mode is.
   update(game, mode) {
-    if (!game || !game.me) return;
+    if (!game || !game.me || (mode && mode.recorded === false)) return;
     if (!this.match) {
       this.match = { startedAt: Date.now(), queueId: mode ? mode.queueId : null, purchases: [] };
       this.prevItems = [];

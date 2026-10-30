@@ -13,6 +13,10 @@ moves them into a numbered section automatically (see README → Versioning).
   the recommended keystone and the lane opponent's typical keystone (predicted from the champion, marked
   *typical*); the loading screen shows the lane opponent's typical keystone; in a match the Runes tab and every
   enemy card show the enemies' real keystones with what to watch out for.
+- **Practice Tool and custom games**: Summoner's Rift custom games and the Practice Tool show Draft (briefs, team
+  plan, ally tips, rune guide, counter-picks, runes and spells), the loading screen, the Match view and the widget.
+  Your role is the one chosen in Draft; the status bar names the mode. These games are not saved to the match
+  history and do not teach the build recommendations.
 
 ## [0.11.0] - 2026-10-30
 

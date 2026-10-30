@@ -18,11 +18,14 @@ let lastResults = [];
 let lastSetupQuery = '';
 let lastSetup = null;
 
+// Without assigned roles (Practice Tool, custom games) the player plays the role chosen here
+// and the other champions get inferred roles.
 function liveModel(d) {
   const me = d.myTeam.find((m) => m.isMe);
+  const allyRole = (m) => m.role || (m.isMe ? state.manual.myRole : d.allyRoles[m.cellId]);
   return {
     live: true,
-    allies: d.myTeam.map((m) => ({ ...m, championId: m.championId || m.hoverId, hovering: !m.championId && !!m.hoverId, role: m.role || d.allyRoles[m.cellId] })),
+    allies: d.myTeam.map((m) => ({ ...m, championId: m.championId || m.hoverId, hovering: !m.championId && !!m.hoverId, role: allyRole(m) })),
     enemies: d.theirTeam.map((m) => ({ ...m, role: d.enemyRoles[m.cellId] || null, inferred: true })),
     bans: d.bans,
     myRole: (me && me.role) || state.manual.myRole,
@@ -183,7 +186,7 @@ async function drawInto(container) {
     el('span', { class: 'muted' }, t('draft.myRole')),
     el('div', { class: 'tabs' }, ROLES.map((r) => el('button', {
       class: `tab ${model.myRole === r ? 'active' : ''}`, disabled: model.roleFixed && model.myRole !== r ? true : null, title: t(`role.${r}`),
-      onClick: () => { state.manual.myRole = r; state.manual.opponent = null; redraw(); },
+      onClick: () => { state.manual.myRole = r; state.manual.opponent = null; window.api.setMyRole(r); redraw(); },
     }, roleIcon(r), t(`role.${r}`)))),
     !model.live ? el('button', { class: 'btn small ghost', onClick: () => { Object.assign(state.manual, { myTeam: Array(5).fill(null), theirTeam: Array(5).fill(null), opponent: null }); redraw(); } }, t('draft.reset')) : null);
 

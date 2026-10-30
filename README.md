@@ -22,7 +22,10 @@ From version 0.2.0 the app **updates itself** from GitHub Releases (banner under
 ## Features
 
 Supported modes: role-based Summoner's Rift queues — Ranked Solo/Duo and Flex, Normal Draft, Clash,
-Swiftplay and Quickplay. ARAM, Blind Pick, rotating modes and custom games are skipped (the app shows a notice).
+Swiftplay and Quickplay. Summoner's Rift **custom games** and the **Practice Tool** show the same Draft, loading
+screen, Match view and widget: nobody has an assigned role there, so your role is the one you choose in Draft and
+the other champions' roles are inferred; these games are not saved to the history and do not teach the build
+recommendations. ARAM, Blind Pick, rotating modes and custom games on other maps are skipped (the app shows a notice).
 
 ### Draft — counter-picks
 - Live data from champion select through the League Client API (LCU): both teams, hovers, bans,

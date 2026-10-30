@@ -97,6 +97,12 @@ test('the analysis summarises results, roles, trend and play style', () => {
   assert.ok(keys.includes('style.oneTrick'));
 });
 
+test('a custom game from the client match history does not teach the engine', () => {
+  const custom = compactGame(rawGame({ queueId: 0 }), db);
+
+  assert.strictEqual(fromMatch(db, custom, 'me'), null);
+});
+
 test('client games teach the engine unless the app recorded them itself', () => {
   const g = compactGame(rawGame({ id: 7 }), db);
   const entry = fromMatch(db, g, 'me');

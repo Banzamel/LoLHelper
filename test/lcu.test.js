@@ -4,7 +4,8 @@ const assert = require('node:assert');
 const path = require('path');
 const { loadDatabase } = require('../src/main/data/store');
 const { modeOf } = require('../src/main/lcu/queues');
-const { fetchRoster, rankFrom } = require('../src/main/lcu/roster');
+const { fetchRoster, rankFrom, withMyPosition } = require('../src/main/lcu/roster');
+const { LcuWatcher } = require('../src/main/lcu/watcher');
 const { normalize } = require('../src/main/lcu/liveclient');
 
 const db = loadDatabase(path.join(__dirname, '..', 'resources', 'data'));
@@ -17,6 +18,80 @@ test('only role-based Summoner\'s Rift queues are supported', () => {
   assert.strictEqual(modeOf(null), null);
   assert.strictEqual(modeOf(session(440)).rankedQueue, 'RANKED_FLEX_SR');
   assert.strictEqual(modeOf(session(420)).rankedQueue, 'RANKED_SOLO_5x5');
+});
+
+// A custom game as the gameflow session reports it: no queue id, map and game mode on the queue.
+const customSession = (mapId, gameMode) => ({ gameData: { isCustomGame: true, queue: { id: -1, mapId, gameMode } }, map: { id: mapId, gameMode } });
+
+test('the Practice Tool on Summoner\'s Rift is supported and not recorded', () => {
+  const mode = modeOf(customSession(11, 'PRACTICETOOL'));
+
+  assert.deepStrictEqual([mode.key, mode.supported, mode.recorded], ['practice', true, false]);
+});
+
+test('a Summoner\'s Rift custom game is supported and not recorded', () => {
+  const mode = modeOf(customSession(11, 'CLASSIC'));
+
+  assert.deepStrictEqual([mode.key, mode.supported, mode.recorded], ['custom', true, false]);
+});
+
+test('a custom ARAM game is not supported', () => {
+  const mode = modeOf(customSession(12, 'ARAM'));
+
+  assert.deepStrictEqual([mode.key, mode.supported, mode.recorded], ['custom', false, false]);
+});
+
+test('a custom game takes the map and mode from the session map when the queue leaves them empty', () => {
+  const session = { gameData: { isCustomGame: true, queue: { id: -1, mapId: 0, gameMode: '' } }, map: { id: 11, gameMode: 'PRACTICETOOL' } };
+
+  const mode = modeOf(session);
+
+  assert.deepStrictEqual([mode.key, mode.supported], ['practice', true]);
+});
+
+test('a normal draft game stays supported and recorded', () => {
+  const mode = modeOf(session(400));
+
+  assert.deepStrictEqual([mode.queueId, mode.key, mode.supported, mode.recorded], [400, 'normalDraft', true, true]);
+});
+
+test('a session without game data has no mode', () => {
+  assert.strictEqual(modeOf({}), null);
+});
+
+test('the player without a position takes the role chosen in Draft', () => {
+  const roster = [{ puuid: 'me', championId: 'Ahri', position: null }, { puuid: 'bot', championId: 'Annie', position: null }];
+
+  const filled = withMyPosition(roster, 'me', 'TOP');
+
+  assert.deepStrictEqual(filled.map((p) => p.position), ['TOP', null]);
+});
+
+test('an assigned position wins over the role chosen in Draft', () => {
+  const roster = [{ puuid: 'me', championId: 'Ahri', position: 'MIDDLE' }];
+
+  assert.strictEqual(withMyPosition(roster, 'me', 'TOP')[0].position, 'MIDDLE');
+});
+
+test('the watcher roster takes the role the player chooses in Draft later', () => {
+  const sent = [];
+  const watcher = new LcuWatcher({ getDb: () => null, getPuuid: () => 'me', send: (channel, payload) => sent.push([channel, payload]) });
+  watcher.setRoster([{ puuid: 'me', championId: 'Ahri', team: 'ORDER', position: null }]);
+
+  watcher.setMyRole('JUNGLE');
+
+  assert.strictEqual(watcher.roster[0].position, 'JUNGLE');
+  assert.deepStrictEqual(sent.at(-1), ['lcu:roster', watcher.roster]);
+});
+
+test('a Practice Tool roster without roles gives the live player the chosen role and no enemies', async () => {
+  const lcu = { get: async () => ({ queueMap: {} }) };
+  const roster = await fetchRoster(lcu, { gameData: { teamOne: [{ puuid: 'me', championId: Number(db.byId.Ahri.key), selectedPosition: '' }], teamTwo: [] } }, db, 'RANKED_SOLO_5x5');
+  const player = { championName: 'Ahri', rawChampionName: 'game_character_displayname_Ahri', riotId: 'Me#1', team: 'ORDER', position: '', level: 1, items: [], scores: {} };
+
+  const game = normalize({ activePlayer: { riotId: 'Me#1', currentGold: 500 }, allPlayers: [player], gameData: {} }, db, withMyPosition(roster, 'me', 'BOTTOM'));
+
+  assert.deepStrictEqual([game.me.position, game.enemies.length], ['BOTTOM', 0]);
 });
 
 test('ranked stats are read for the game\'s queue', () => {
