@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-30
+
 ### Added
 - **Champion briefs**: every champion in Draft and on the loading screen has a short description of what it
   does in a fight (its class and standout traits such as crowd control, mobility or long-range spells), in Polish
@@ -233,7 +235,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/Banzamel/LoLHelper/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/Banzamel/LoLHelper/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/Banzamel/LoLHelper/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/Banzamel/LoLHelper/compare/v0.9.0...v0.9.1
