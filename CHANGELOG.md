@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-30
+
 ### Added
 - **Rune guide**: every keystone has a short tip on how to use it and what to watch out for when an enemy plays it,
   in Polish and English; the other runes show their short description in the rune panel. Draft shows the tip for
@@ -246,7 +248,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/Banzamel/LoLHelper/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/Banzamel/LoLHelper/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/Banzamel/LoLHelper/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/Banzamel/LoLHelper/compare/v0.9.1...v0.10.0
