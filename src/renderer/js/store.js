@@ -18,6 +18,9 @@ export const state = {
   // A simulated match is running (Match view preview without playing).
   demo: false,
   draft: null,
+  // Players of the running match from the client ([{ championId, team, position, puuid, rank }]),
+  // known from the loading screen on, before the game itself reports any data.
+  roster: null,
   game: null,
   appUpdate: { state: 'idle' },
   manual: { myTeam: Array(5).fill(null), theirTeam: Array(5).fill(null), myRole: 'MIDDLE', opponent: null, enemyRoles: {} },

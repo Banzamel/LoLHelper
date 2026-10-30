@@ -7,6 +7,16 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Added
+- **Champion briefs**: every champion in Draft and on the loading screen has a short description of what it
+  does in a fight (its class and standout traits such as crowd control, mobility or long-range spells), in Polish
+  and English. A few champions with unusual kits have hand-written briefs.
+- **Playing with your team**: tips on how to play with each ally from your role and champion (stay close to an
+  enchanter, follow up on a catcher's hooks, wait for the engage, gank lanes with crowd control…), in Draft and on
+  the loading screen.
+- **Loading screen** in the Match view: once the game starts loading, both teams with roles, ranks and briefs,
+  before the game reports any data.
+
 ## [0.10.1] - 2026-10-30
 
 ### Fixed

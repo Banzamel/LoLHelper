@@ -93,6 +93,7 @@ class LcuWatcher {
   setRoster(roster) {
     if (!roster) clearTimeout(this.rosterTimer);
     this.roster = roster;
+    this.send('lcu:roster', roster);
   }
 
   async refreshSession(session) {
@@ -123,7 +124,7 @@ class LcuWatcher {
   }
 
   snapshot() {
-    return { status: this.status, phase: this.phase, mode: this.mode, draft: this.draft };
+    return { status: this.status, phase: this.phase, mode: this.mode, draft: this.draft, roster: this.roster };
   }
 }
 

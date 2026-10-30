@@ -87,6 +87,7 @@ async function boot() {
   state.phase = init.phase;
   state.mode = init.mode;
   state.draft = init.draft;
+  state.roster = init.roster;
   state.game = init.game;
   state.demo = init.demo;
   state.appUpdate = init.update;
@@ -100,9 +101,11 @@ async function boot() {
   window.api.onGamePhase((p) => {
     state.phase = p;
     renderStatus();
+    emit('phase');
     if (p === 'ChampSelect' && isSupported() && state.settings.autoOpenDraft && current.name !== 'draft') navigate('draft');
   });
   window.api.onGameMode((m) => { state.mode = m; renderStatus(); emit('mode'); });
+  window.api.onRoster((r) => { state.roster = r; emit('roster'); });
   window.api.onHistory((h) => { state.history = h; emit('history'); });
   // Another account logged in: its own settings, history and games.
   window.api.onProfile(async ({ profile, settings, history }) => {

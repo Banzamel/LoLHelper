@@ -2,6 +2,8 @@
 // app — a scoreboard on top (kills, objectives, item gold lead) and tabs: what to do now
 // (next item, skill, lane duel), the enemies in detail, both teams as a table, charts of the
 // match so far and the rune page. Every player opens a sheet with their profile and history.
+// On the loading screen, before the game reports any data, both teams from the client's
+// roster with champion briefs and the tips on playing with each ally.
 import { t } from '../js/i18n.js';
 import { state, champ, item, asset, subscribe, isSupported } from '../js/store.js';
 import { el, champIcon, itemIcon, roleIcon, rankBadge, runeIcon, summonerIcon, buildOrder, ROLES } from '../js/ui.js';
@@ -11,6 +13,7 @@ import { openPlayer, statTile, itemList, kdaText, kdaRatio } from './player.js';
 import { bought, buildForGame, needsStarters, startersCost, nextSkill } from '../js/game.js';
 import { lineChart, barList, versusBar, fmtMinutes, fmtGold, COLORS } from '../js/charts.js';
 import { setDemo } from '../js/app.js';
+import { loadTeamNotes, briefLine, teamTipsPanel } from './team.js';
 
 const TABS = ['now', 'enemies', 'teams', 'charts', 'runes'];
 // View state that survives the redraws of a running match.
@@ -318,6 +321,53 @@ function paint(container) {
     body);
 }
 
+// ---- Loading screen ---------------------------------------------------------------------
+
+// The roster as both teams seen from the player, or as blue and red side when the player is
+// not in it (no account known yet).
+function rosterSides(roster) {
+  const mine = roster.find((p) => state.profile && p.puuid === state.profile.puuid);
+  const team = (side) => roster.filter((p) => p.team === side).sort((a, b) => ROLES.indexOf(a.position) - ROLES.indexOf(b.position));
+  // Without the player, the sides keep the ally / enemy colours: blue and red as in the client.
+  if (!mine) return { me: null, first: { players: team('ORDER'), title: t('live.blueSide'), ally: true }, second: { players: team('CHAOS'), title: t('live.redSide'), ally: false } };
+  return {
+    me: mine,
+    first: { players: team(mine.team), title: t('draft.allies'), ally: true },
+    second: { players: team(mine.team === 'ORDER' ? 'CHAOS' : 'ORDER'), title: t('draft.enemies'), ally: false },
+  };
+}
+
+function rosterQuery({ me, first, second }) {
+  const pick = (p) => ({ championId: p.championId, role: p.position });
+  if (!me) return { me: {}, allies: [], enemies: [...first.players, ...second.players].map(pick) };
+  return { me: pick(me), allies: first.players.filter((p) => p !== me).map(pick), enemies: second.players.map(pick) };
+}
+
+function rosterCard({ players, title, ally }, notes, me) {
+  return el('section', { class: `card team-card ${ally ? 'ally' : 'enemy'}` },
+    el('div', { class: 'team-head' }, el('h2', { class: ally ? 'ally-title' : 'enemy-title' }, title)),
+    el('div', { class: 'roster-list' }, players.map((p) => {
+      const c = champ(p.championId);
+      return el('div', { class: `roster-row ${p === me ? 'me' : ''}` }, champIcon(p.championId, { size: 'sm' }),
+        el('div', { class: 'roster-main' },
+          el('div', { class: 'roster-name' }, el('strong', {}, c ? c.name : t('draft.empty')),
+            p.position ? el('span', { class: 'role-badge' }, roleIcon(p.position), t(`role.${p.position}`)) : null,
+            p === me ? el('span', { class: 'chip teal' }, t('draft.you')) : null,
+            rankBadge(p.rank, { compact: true })),
+          briefLine(notes.briefs[p.championId])));
+    })));
+}
+
+function loadingState(container, sides, notes) {
+  container.replaceChildren(
+    el('div', { class: 'view-head' }, el('h1', {}, t('live.title')), el('span', { class: 'chip teal' }, t('live.loading')),
+      el('span', { class: 'muted small' }, t('live.loadingHint'))),
+    teamTipsPanel(notes) || '',
+    el('div', { class: 'roster-grid' }, rosterCard(sides.first, notes, sides.me), rosterCard(sides.second, notes, sides.me)));
+}
+
+const isLoading = () => state.phase === 'InProgress' && isSupported() && !state.demo && !!(state.roster && state.roster.length);
+
 function emptyState(container) {
   const unsupported = !isSupported() && state.phase !== 'None';
   container.replaceChildren(el('div', { class: 'view-head' }, el('h1', {}, t('live.title'))),
@@ -336,6 +386,17 @@ export function renderLive(root) {
   const update = async () => {
     const g = state.game;
     if (!g || !g.me) {
+      if (isLoading()) {
+        const key = JSON.stringify(['loading', state.roster, state.profile && state.profile.puuid]);
+        if (key === lastKey) return;
+        lastKey = key;
+        current = null;
+        const sides = rosterSides(state.roster);
+        const notes = await loadTeamNotes(rosterQuery(sides));
+        // The game may have started (or the screen changed) while the notes were loading.
+        if (lastKey === key) loadingState(container, sides, notes);
+        return;
+      }
       const key = `none-${isSupported()}-${state.phase}-${state.demo}`;
       if (key !== lastKey) { lastKey = key; current = null; emptyState(container); }
       return;
@@ -355,6 +416,6 @@ export function renderLive(root) {
     current = { game: g, data };
     repaint();
   };
-  const unsub = subscribe((what) => { if (!container.isConnected) { unsub(); return; } if (what === 'game' || what === 'mode') update(); });
+  const unsub = subscribe((what) => { if (!container.isConnected) { unsub(); return; } if (['game', 'mode', 'phase', 'roster', 'profile'].includes(what)) update(); });
   update();
 }

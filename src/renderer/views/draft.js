@@ -1,11 +1,13 @@
 // Draft view: both teams (live from champion select or set manually), the lane opponent
 // and counter-pick recommendations for the player's role; once the player has a champion,
 // the runes, spells and starting items for it (compared with what is set in the client).
+// Every picked champion carries a short brief, and allies get tips on how to play with them.
 import { t } from '../js/i18n.js';
 import { state, champ, subscribe, isSupported } from '../js/store.js';
 import { el, champIcon, itemIcon, roleIcon, ROLES, scoreRing, reasonChip, pickChampion } from '../js/ui.js';
 import { loadoutPanels } from './loadout.js';
 import { recordChip } from './history.js';
+import { loadTeamNotes, briefLine, teamTipsPanel } from './team.js';
 import { navigate } from '../js/app.js';
 
 let lastQuery = '';
@@ -50,7 +52,7 @@ function opponentOf(model) {
   return complete || !rates || rates[model.myRole] > 0 ? e.championId : null;
 }
 
-function slot(member, { enemy, opponent, onClick, onOpponent }) {
+function slot(member, { enemy, opponent, brief, onClick, onOpponent }) {
   const c = champ(member.championId);
   const isOpp = enemy && member.championId && member.championId === opponent;
   const vsBtn = enemy && c && !isOpp ? el('button', {
@@ -62,7 +64,8 @@ function slot(member, { enemy, opponent, onClick, onOpponent }) {
     el('div', { class: 'slot-info' },
       el('div', { class: 'slot-name' }, c ? c.name : t('draft.empty')),
       el('div', { class: 'role-badge', title: member.inferred ? t('draft.roleInferred') : null }, member.role ? roleIcon(member.role) : null,
-        member.role ? t(`role.${member.role}`) : '', member.inferred && member.role ? '*' : '')),
+        member.role ? t(`role.${member.role}`) : '', member.inferred && member.role ? '*' : ''),
+      briefLine(brief, { compact: true })),
     member.isMe ? el('span', { class: 'chip teal' }, t('draft.you')) : null,
     isOpp ? el('span', { class: 'chip minus' }, 'VS') : vsBtn);
 }
@@ -95,6 +98,16 @@ async function loadRecommendations(model, opponent) {
   const key = JSON.stringify(query);
   if (key !== lastQuery) { lastQuery = key; lastResults = await window.api.counters(query); }
   return lastResults;
+}
+
+function teamQuery(model) {
+  const me = model.allies.find((a) => a.isMe);
+  const pick = (m) => ({ championId: m.championId || null, role: m.role || null });
+  return {
+    me: { championId: me ? me.championId || null : null, role: model.myRole },
+    allies: model.allies.filter((a) => !a.isMe).map(pick),
+    enemies: model.enemies.map(pick),
+  };
 }
 
 async function loadSetup(model, opponent, championId) {
@@ -133,6 +146,7 @@ async function drawInto(container) {
   const model = state.draft ? liveModel(state.draft) : await manualModel();
   const opponent = opponentOf(model);
   const recs = await loadRecommendations(model, opponent);
+  const notes = await loadTeamNotes(teamQuery(model));
   const redraw = () => drawInto(container);
 
   const setAlly = async (i) => {
@@ -177,14 +191,15 @@ async function drawInto(container) {
     recs.length ? el('div', { class: 'rec-list' }, recs.map((r) => recCard(r, model, opponent))) : el('p', { class: 'muted' }, t('draft.noResults')));
 
   const allies = el('section', { class: 'panel team allies' }, el('h2', {}, t('draft.allies')),
-    model.allies.map((m, i) => slot(m, { enemy: false, onClick: model.live ? null : () => setAlly(i) })));
+    model.allies.map((m, i) => slot(m, { enemy: false, brief: notes.briefs[m.championId], onClick: model.live ? null : () => setAlly(i) })));
   const enemies = el('section', { class: 'panel team enemies' }, el('h2', {}, t('draft.enemies')),
-    model.enemies.map((m, i) => slot(m, { enemy: true, opponent, onClick: model.live ? null : () => setEnemy(i), onOpponent: () => setOpponent(m) })));
+    model.enemies.map((m, i) => slot(m, { enemy: true, opponent, brief: notes.briefs[m.championId], onClick: model.live ? null : () => setEnemy(i), onOpponent: () => setOpponent(m) })));
 
   const me = model.allies.find((a) => a.isMe);
   const myChamp = me && champ(me.championId) ? me.championId : null;
   const setup = myChamp ? setupSection(await loadSetup(model, opponent, myChamp), model, me) : null;
   const grid = el('div', { class: 'draft-grid' }, allies, center, enemies);
-  // Runes and spells go first, so they are visible without scrolling.
-  container.replaceChildren(head, unsupported || '', setup || '', hint || '', bans || '', grid);
+  // Runes and spells go first, so they are visible without scrolling; the ally tips are short
+  // and only appear once some rule applies, so they sit above the teams.
+  container.replaceChildren(head, unsupported || '', setup || '', hint || '', bans || '', teamTipsPanel(notes) || '', grid);
 }

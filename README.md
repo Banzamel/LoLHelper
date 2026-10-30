@@ -34,6 +34,8 @@ Swiftplay and Quickplay. ARAM, Blind Pick, rotating modes and custom games are s
   ability traits read from ability texts (hard CC, dashes, healing, %HP and true damage, range),
   team composition (AD/AP balance, frontline, CC), your champion pool and mastery.
 - No enemy laner yet? You get **safe blind picks**. Client not running? Use **manual mode**.
+- Every champion has a short **brief** — what it does in a fight — and **Playing with your team** says how to
+  play with each ally from your role and champion.
 
 ### Build — items against your opponent
 - Starting items, boots (with the tier-3 upgrade), 3 core items in buy order, situational items and a
@@ -59,6 +61,8 @@ Swiftplay and Quickplay. ARAM, Blind Pick, rotating modes and custom games are s
 - While the game runs, the app reads the Live Client Data API: both teams with Riot IDs, levels, KDA, CS and items,
   objectives and a kill feed. The Match view has a scoreboard and tabs: what to do now, every enemy in detail
   (items, stats, what to counter), both teams as a table, real-time charts (gold lead, team gold, kills) and runes.
+- On the **loading screen**, before the game reports data, the Match view shows both teams with roles, ranks and
+  champion briefs, plus the tips for playing with your allies.
 - Click any player to open their profile: rank, recent results, champions, roles and play style.
 - **Simulated match**: *Show a simulated match* (Match view, or the switch in *Settings*) plays an invented game so you
   can try all of this without playing; *Stop simulation* turns it off. Nothing from it is recorded.

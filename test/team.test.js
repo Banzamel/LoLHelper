@@ -1,0 +1,168 @@
+// Champion briefs and ally tips (engine/team.js): rules on small invented champions, plus
+// coverage checks on the bundled database (run `npm run fetch-data` first) and the lang files.
+const test = require('node:test');
+const assert = require('node:assert');
+const path = require('path');
+const { loadDatabase } = require('../src/main/data/store');
+const { championBrief, allyTips, teamNotes, ALLY_RULES, TRAITS, CLASS_ORDER } = require('../src/main/engine/team');
+const { BRIEFS } = require('../src/main/engine/knowledge');
+
+const LANGS = ['pl', 'en'].map((code) => require(`../src/renderer/lang/${code}.json`));
+
+// A plain champion: middling ratings, no standout traits; `over` sets what a test is about.
+function champion(id, { ratings = {}, traits = {}, ...over } = {}) {
+  return {
+    id, archetypes: [], attackType: 'MELEE', resource: 'MANA', positions: ['TOP'],
+    ratings: { damage: 2, toughness: 2, control: 2, mobility: 2, utility: 1, difficulty: 2, ...ratings },
+    traits: { hardCC: 0, longRange: 0, heal: 0, percentHp: 0, trueDamage: 0, untargetable: 0, stealth: 0, execute: 0, ...traits },
+    ...over,
+  };
+}
+
+const dbOf = (...champions) => ({ byId: Object.fromEntries(champions.map((c) => [c.id, c])) });
+
+const MARKSMAN = champion('Ash', { archetypes: ['MARKSMAN'], attackType: 'RANGED', positions: ['BOTTOM'], ratings: { damage: 3, toughness: 1 } });
+const ENCHANTER = champion('Lulu', { archetypes: ['ENCHANTER', 'SUPPORT'], attackType: 'RANGED', positions: ['SUPPORT'] });
+const CATCHER = champion('Thresh', { archetypes: ['CATCHER', 'SUPPORT', 'TANK'], attackType: 'RANGED', positions: ['SUPPORT'], ratings: { control: 3 } });
+const CC_MAGE = champion('Lissandra', { archetypes: ['MAGE'], attackType: 'RANGED', positions: ['MIDDLE'], ratings: { mobility: 2 }, traits: { hardCC: 2 } });
+const JUNGLER = champion('Vi', { archetypes: ['DIVER'], positions: ['JUNGLE'] });
+
+test('a brief names the most specific class of the champion', () => {
+  const brief = championBrief(CATCHER);
+
+  assert.strictEqual(brief.key, 'brief.class.CATCHER');
+});
+
+test('a brief lists at most three standout traits, most telling first', () => {
+  const c = champion('Many', { archetypes: ['ASSASSIN'], ratings: { mobility: 3, damage: 3, toughness: 1, difficulty: 3 }, traits: { hardCC: 2, stealth: 1 } });
+
+  const brief = championBrief(c);
+
+  assert.deepStrictEqual(brief.traits, ['brief.trait.cc', 'brief.trait.mobile', 'brief.trait.glassCannon']);
+});
+
+test('a ranged champion of a melee class gets the ranged trait', () => {
+  const c = champion('Jayce', { archetypes: ['FIGHTER'], attackType: 'RANGED' });
+
+  const brief = championBrief(c);
+
+  assert.deepStrictEqual(brief.traits, ['brief.trait.ranged']);
+});
+
+test('a champion without archetypes still gets a brief', () => {
+  const brief = championBrief(champion('Blank'));
+
+  assert.deepStrictEqual(brief, { key: 'brief.class.OTHER', traits: [] });
+});
+
+test('a curated brief replaces the generated one', () => {
+  const yuumi = champion('Yuumi', { archetypes: ['ENCHANTER'], ratings: { mobility: 3 } });
+
+  const brief = championBrief(yuumi);
+
+  assert.deepStrictEqual(brief, { key: BRIEFS.Yuumi, traits: [] });
+});
+
+test('an unknown champion has no brief', () => {
+  assert.strictEqual(championBrief(undefined), null);
+});
+
+test('a marksman is told to stay close to an enchanter support', () => {
+  const db = dbOf(MARKSMAN, ENCHANTER);
+
+  const tips = allyTips(db, { championId: 'Ash', role: 'BOTTOM' }, [{ championId: 'Lulu', role: 'SUPPORT' }]);
+
+  assert.deepStrictEqual(tips, [{ championId: 'Lulu', role: 'SUPPORT', tips: [{ key: 'tip.stayWithEnchanter', params: { champ: 'Lulu' } }] }]);
+});
+
+test('a jungler is told to gank the lane of an ally with crowd control', () => {
+  const db = dbOf(JUNGLER, CC_MAGE);
+
+  const [entry] = allyTips(db, { championId: 'Vi', role: 'JUNGLE' }, [{ championId: 'Lissandra', role: 'MIDDLE' }]);
+
+  assert.strictEqual(entry.tips[0].key, 'tip.gankCc');
+});
+
+test('an ally gets at most two tips, in rule order', () => {
+  // Matches three rules: follow the catch, wait for the engage, fight behind the frontline.
+  const leona = champion('Leona', { archetypes: ['VANGUARD', 'CATCHER', 'TANK'], positions: ['SUPPORT'], ratings: { toughness: 3, control: 3 } });
+  const db = dbOf(MARKSMAN, leona);
+
+  const [entry] = allyTips(db, { championId: 'Ash', role: 'BOTTOM' }, [{ championId: 'Leona', role: 'SUPPORT' }]);
+
+  assert.deepStrictEqual(entry.tips.map((x) => x.key), ['tip.followCatch', 'tip.waitForEngage']);
+});
+
+test('empty slots and unknown champions get no tips', () => {
+  const db = dbOf(MARKSMAN);
+
+  const tips = allyTips(db, { championId: 'Ash', role: 'BOTTOM' }, [{ championId: null, role: 'SUPPORT' }, { championId: 'Nobody', role: 'TOP' }]);
+
+  assert.deepStrictEqual(tips, []);
+});
+
+test('role rules apply before the player has picked a champion', () => {
+  const db = dbOf(CC_MAGE);
+
+  const [entry] = allyTips(db, { championId: null, role: 'JUNGLE' }, [{ championId: 'Lissandra', role: 'MIDDLE' }]);
+
+  assert.deepStrictEqual(entry.tips.map((x) => x.key), ['tip.gankCc']);
+});
+
+test('without a role or a champion the player gets no tips', () => {
+  const db = dbOf(ENCHANTER);
+
+  const tips = allyTips(db, { championId: null, role: null }, [{ championId: 'Lulu', role: 'SUPPORT' }]);
+
+  assert.deepStrictEqual(tips, []);
+});
+
+test('without a known role the player plays the champion main position', () => {
+  const db = dbOf(MARKSMAN, ENCHANTER);
+
+  const [entry] = allyTips(db, { championId: 'Ash', role: null }, [{ championId: 'Lulu', role: null }]);
+
+  assert.strictEqual(entry.tips[0].key, 'tip.stayWithEnchanter');
+});
+
+test('the player own champion is not listed as an ally', () => {
+  const db = dbOf(MARKSMAN, ENCHANTER);
+
+  const tips = allyTips(db, { championId: 'Ash', role: 'BOTTOM' }, [{ championId: 'Ash', role: 'BOTTOM' }]);
+
+  assert.deepStrictEqual(tips, []);
+});
+
+test('team notes hold a brief for every known champion in the game', () => {
+  const db = dbOf(MARKSMAN, ENCHANTER, CATCHER);
+
+  const notes = teamNotes(db, { me: { championId: 'Ash', role: 'BOTTOM' }, allies: [{ championId: 'Lulu' }, { championId: null }], enemies: [{ championId: 'Thresh' }, { championId: 'Nobody' }] });
+
+  assert.deepStrictEqual(Object.keys(notes.briefs).sort(), ['Ash', 'Lulu', 'Thresh']);
+});
+
+test('every champion in the database gets a brief', () => {
+  const db = loadDatabase(path.join(__dirname, '..', 'resources', 'data'));
+
+  const missing = db.champions.filter((c) => !championBrief(c)).map((c) => c.id);
+
+  assert.ok(db.champions.length > 0);
+  assert.deepStrictEqual(missing, []);
+});
+
+test('curated briefs use valid Data Dragon ids', () => {
+  const db = loadDatabase(path.join(__dirname, '..', 'resources', 'data'));
+
+  const unknown = Object.keys(BRIEFS).filter((id) => !db.byId[id]);
+
+  assert.deepStrictEqual(unknown, []);
+});
+
+test('every brief and tip text exists in every language', () => {
+  const keys = [...CLASS_ORDER, 'OTHER'].map((a) => `brief.class.${a}`)
+    .concat(TRAITS.map(([key]) => key), ALLY_RULES.map(([key]) => key), Object.values(BRIEFS));
+
+  const missing = LANGS.flatMap((dict) => keys.filter((k) => !dict[k]));
+
+  assert.deepStrictEqual(missing, []);
+});

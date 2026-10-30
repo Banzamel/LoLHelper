@@ -188,4 +188,15 @@ const ARCH_BEATS = {
   SPECIALIST: [],
 };
 
-module.exports = { COUNTERS, ARCH_BEATS };
+// Curated champion briefs: champion id -> translation key of a hand-written brief, for
+// champions whose kit the archetype and rating rules describe poorly (unique mechanics).
+// The curated text replaces the generated one; each key needs a text in every lang file.
+const BRIEFS = {
+  Yuumi: 'brief.champ.Yuumi',
+  Kalista: 'brief.champ.Kalista',
+  Teemo: 'brief.champ.Teemo',
+  Sylas: 'brief.champ.Sylas',
+  Singed: 'brief.champ.Singed',
+};
+
+module.exports = { COUNTERS, ARCH_BEATS, BRIEFS };
