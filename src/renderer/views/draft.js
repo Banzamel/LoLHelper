@@ -1,13 +1,14 @@
 // Draft view: both teams (live from champion select or set manually), the lane opponent
 // and counter-pick recommendations for the player's role; once the player has a champion,
 // the runes, spells and starting items for it (compared with what is set in the client).
-// Every picked champion carries a short brief, and allies get tips on how to play with them.
+// Every picked champion carries a short brief, allies get tips on how to play with them, and
+// from three picks on a team plan says what the composition wants to do.
 import { t } from '../js/i18n.js';
 import { state, champ, subscribe, isSupported } from '../js/store.js';
 import { el, champIcon, itemIcon, roleIcon, ROLES, scoreRing, reasonChip, pickChampion } from '../js/ui.js';
 import { loadoutPanels } from './loadout.js';
 import { recordChip } from './history.js';
-import { loadTeamNotes, briefLine, teamTipsPanel } from './team.js';
+import { loadTeamNotes, briefLine, teamTipsPanel, compositionPanel } from './team.js';
 import { navigate } from '../js/app.js';
 
 let lastQuery = '';
@@ -199,7 +200,8 @@ async function drawInto(container) {
   const myChamp = me && champ(me.championId) ? me.championId : null;
   const setup = myChamp ? setupSection(await loadSetup(model, opponent, myChamp), model, me) : null;
   const grid = el('div', { class: 'draft-grid' }, allies, center, enemies);
-  // Runes and spells go first, so they are visible without scrolling; the ally tips are short
-  // and only appear once some rule applies, so they sit above the teams.
-  container.replaceChildren(head, unsupported || '', setup || '', hint || '', bans || '', teamTipsPanel(notes) || '', grid);
+  // Runes and spells go first, so they are visible without scrolling; the team plan and the ally
+  // tips are short and only appear once enough champions are picked or some rule applies, so
+  // they sit above the teams.
+  container.replaceChildren(head, unsupported || '', setup || '', hint || '', bans || '', compositionPanel(notes) || '', teamTipsPanel(notes) || '', grid);
 }

@@ -179,3 +179,8 @@ h3.sub { margin: 14px 0 8px; color: var(--gold); font-size: 12px; text-transform
 .ally-tip-name { display: flex; align-items: center; gap: 8px; }
 .ally-tip-name strong { color: var(--gold-hi); }
 .ally-tip .tips { gap: 4px; font-size: 12px; }
+.team-comp { margin-bottom: 14px; display: grid; gap: 8px; }
+.team-comp .panel-title { flex-wrap: wrap; }
+.comp-plan { font-size: 13px; }
+.comp-warnings { font-size: 12px; color: #ff8a9b; }
+.comp-enemy { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }

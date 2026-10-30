@@ -3,7 +3,7 @@
 // (next item, skill, lane duel), the enemies in detail, both teams as a table, charts of the
 // match so far and the rune page. Every player opens a sheet with their profile and history.
 // On the loading screen, before the game reports any data, both teams from the client's
-// roster with champion briefs and the tips on playing with each ally.
+// roster with champion briefs, the team plan and the tips on playing with each ally.
 import { t } from '../js/i18n.js';
 import { state, champ, item, asset, subscribe, isSupported } from '../js/store.js';
 import { el, champIcon, itemIcon, roleIcon, rankBadge, runeIcon, summonerIcon, buildOrder, ROLES } from '../js/ui.js';
@@ -13,7 +13,7 @@ import { openPlayer, statTile, itemList, kdaText, kdaRatio } from './player.js';
 import { bought, buildForGame, needsStarters, startersCost, nextSkill } from '../js/game.js';
 import { lineChart, barList, versusBar, fmtMinutes, fmtGold, COLORS } from '../js/charts.js';
 import { setDemo } from '../js/app.js';
-import { loadTeamNotes, briefLine, teamTipsPanel } from './team.js';
+import { loadTeamNotes, briefLine, teamTipsPanel, compositionPanel } from './team.js';
 
 const TABS = ['now', 'enemies', 'teams', 'charts', 'runes'];
 // View state that survives the redraws of a running match.
@@ -362,6 +362,8 @@ function loadingState(container, sides, notes) {
   container.replaceChildren(
     el('div', { class: 'view-head' }, el('h1', {}, t('live.title')), el('span', { class: 'chip teal' }, t('live.loading')),
       el('span', { class: 'muted small' }, t('live.loadingHint'))),
+    // Without the player both sides are sent as enemies (rosterQuery), so there is no own plan.
+    (sides.me && compositionPanel(notes)) || '',
     teamTipsPanel(notes) || '',
     el('div', { class: 'roster-grid' }, rosterCard(sides.first, notes, sides.me), rosterCard(sides.second, notes, sides.me)));
 }

@@ -2,7 +2,9 @@
 // (its class plus a few standout traits), built from the archetypes, ratings and ability
 // traits in the database, so it works for every champion — new ones included; curated briefs
 // (knowledge.js) win where the rules fall short. Ally tips say how the player, from their
-// role and champion, plays with each ally. Texts are translation keys ({ key, params }).
+// role and champion, plays with each ally. A team composition names the team's style (engage,
+// protect the carry, poke, pick, split push), how to play it and its gaps (no frontline, one
+// damage type…). Texts are translation keys ({ key, params }).
 const { BRIEFS } = require('./knowledge');
 
 // Most specific class first: Meraki lists subclasses (CATCHER) next to broad ones (SUPPORT).
@@ -98,12 +100,104 @@ function allyTips(db, me, allies) {
     .filter((a) => a.tips.length);
 }
 
-// Briefs for every champion in the game plus the ally tips, for the Draft view and the
-// loading screen. me = { championId, role }, allies (without the player) and enemies = [{ championId, role }].
+// ---- Team composition ---------------------------------------------------------------------
+
+// Fewer known champions say nothing about the team's style; from three on even the gaps are
+// worth knowing mid-draft ("still no frontline").
+const MIN_KNOWN = 3;
+const MIN_STYLE_MEMBERS = 2;
+// Below this share of the team's damage ratings the other damage type is too little to make the
+// enemies buy both resists (an AP enchanter next to four AD champions).
+const MIN_DAMAGE_SHARE = 0.25;
+const MAX_LOW_CC = 1;
+
+const isEngager = (c) => has(c, ['VANGUARD', 'DIVER']) || (hasCC(c) && c.ratings.toughness >= 3);
+const isProtector = (c) => has(c, ['ENCHANTER', 'WARDEN']);
+// Long-range marksmen (Jayce, Varus) poke rather than carry long fights.
+const isHyperCarry = (c) => has(c, ['MARKSMAN']) && !has(c, ['ARTILLERY']) && c.attackType === 'RANGED';
+const isPoker = (c) => c.attackType === 'RANGED' && (has(c, ['ARTILLERY']) || c.traits.longRange >= 2);
+// Meraki tags many duelists (Fiora, Jax) as ASSASSIN too; they split rather than pick.
+const isPicker = (c) => has(c, ['CATCHER']) || (has(c, ['ASSASSIN']) && !has(c, ['SKIRMISHER'])) || c.traits.stealth >= 1;
+const isSplitPusher = (c) => has(c, ['SKIRMISHER']);
+
+// A carry is protected only when someone protects it: both must be there. The team plays
+// around one carry, so a second marksman does not make it more of a protect team.
+function protectMembers(team) {
+  const carry = team.find(isHyperCarry);
+  const protectors = team.filter(isProtector);
+  return carry && protectors.length ? [carry, ...protectors] : [];
+}
+
+// Style -> the champions that play it, in tie-break order (first wins a tie).
+const STYLES = [
+  ['ENGAGE', (team) => team.filter(isEngager)],
+  ['PROTECT', protectMembers],
+  ['POKE', (team) => team.filter(isPoker)],
+  ['PICK', (team) => team.filter(isPicker)],
+  ['SPLIT', (team) => team.filter(isSplitPusher)],
+];
+const MIXED = 'MIXED';
+
+const PLANS = {
+  ENGAGE: ['comp.plan.ENGAGE.1', 'comp.plan.ENGAGE.2', 'comp.plan.ENGAGE.3'],
+  PROTECT: ['comp.plan.PROTECT.1', 'comp.plan.PROTECT.2', 'comp.plan.PROTECT.3'],
+  POKE: ['comp.plan.POKE.1', 'comp.plan.POKE.2', 'comp.plan.POKE.3'],
+  PICK: ['comp.plan.PICK.1', 'comp.plan.PICK.2', 'comp.plan.PICK.3'],
+  SPLIT: ['comp.plan.SPLIT.1', 'comp.plan.SPLIT.2', 'comp.plan.SPLIT.3'],
+  [MIXED]: ['comp.plan.MIXED.1', 'comp.plan.MIXED.2'],
+};
+
+function damageShare(team, type) {
+  const total = team.reduce((s, c) => s + c.ratings.damage, 0);
+  const part = team.filter((c) => c.damageType === type).reduce((s, c) => s + c.ratings.damage, 0);
+  return total ? part / total : 0;
+}
+
+// The gaps of a team, all that apply, in this order.
+const WARNINGS = [
+  ['comp.warn.noFrontline', (team) => !team.some(isFrontline)],
+  ['comp.warn.physicalOnly', (team) => damageShare(team, 'AP') < MIN_DAMAGE_SHARE],
+  ['comp.warn.magicOnly', (team) => damageShare(team, 'AD') < MIN_DAMAGE_SHARE],
+  ['comp.warn.noEngage', (team) => !team.some((c) => isEngager(c) || has(c, ['CATCHER']))],
+  ['comp.warn.lowCC', (team) => team.filter(hasCC).length <= MAX_LOW_CC],
+];
+
+// The style with most members (at least MIN_STYLE_MEMBERS), else MIXED.
+function styleOf(team) {
+  const best = STYLES.map(([style, membersOf]) => ({ style, members: membersOf(team) }))
+    .reduce((top, s) => (s.members.length > top.members.length ? s : top));
+  return best.members.length >= MIN_STYLE_MEMBERS ? best : { style: MIXED, members: [] };
+}
+
+// { style, plan, warnings, enemyLine } for the known champions of one team, or null when fewer
+// than MIN_KNOWN are known. The plan and enemy line name the style's first member as {champ}.
+function teamComposition(team) {
+  if (team.length < MIN_KNOWN) return null;
+  const { style, members } = styleOf(team);
+  const params = members.length ? { champ: members[0].id } : {};
+  return {
+    style,
+    plan: PLANS[style].map((key) => ({ key, params })),
+    warnings: WARNINGS.filter(([, applies]) => applies(team)).map(([key]) => ({ key })),
+    enemyLine: { key: `comp.enemy.${style}`, params },
+  };
+}
+
+const knownChampions = (db, picks) => [...new Set(picks.map((p) => p.championId))].map((id) => db.byId[id]).filter(Boolean);
+
+// Briefs for every champion in the game, the ally tips and both teams' compositions, for the
+// Draft view and the loading screen. me = { championId, role }, allies (without the player)
+// and enemies = [{ championId, role }].
 function teamNotes(db, { me = {}, allies = [], enemies = [] } = {}) {
   const ids = [me.championId, ...allies.map((a) => a.championId), ...enemies.map((e) => e.championId)].filter((id) => db.byId[id]);
   const briefs = Object.fromEntries(ids.map((id) => [id, championBrief(db.byId[id])]));
-  return { briefs, allyTips: allyTips(db, me, allies) };
+  const composition = {
+    allies: teamComposition(knownChampions(db, [me, ...allies])),
+    enemies: teamComposition(knownChampions(db, enemies)),
+  };
+  return { briefs, allyTips: allyTips(db, me, allies), composition };
 }
 
-module.exports = { championBrief, allyTips, teamNotes, ALLY_RULES, TRAITS, CLASS_ORDER };
+module.exports = {
+  championBrief, allyTips, teamComposition, teamNotes, ALLY_RULES, TRAITS, CLASS_ORDER, STYLES, PLANS, WARNINGS, MIXED, MIN_KNOWN,
+};

@@ -1,4 +1,4 @@
-// Champion briefs and "Playing with your team" (engine/team.js), shared by the Draft view
+// Champion briefs, "Playing with your team" and the team plan (engine/team.js), shared by the Draft view
 // and the loading screen of the Match view.
 import { t } from '../js/i18n.js';
 import { champ } from '../js/store.js';
@@ -40,4 +40,21 @@ export function teamTipsPanel(notes) {
   return el('section', { class: 'panel team-tips' },
     el('div', { class: 'panel-title' }, el('h2', {}, t('team.title')), el('span', { class: 'muted small' }, t('team.hint'))),
     el('div', { class: 'ally-tips' }, notes.allyTips.map(allyTipRow)));
+}
+
+// The team's style, how to play it and its gaps, plus one line on what the enemies want;
+// null while neither team has enough known champions (engine/team.js MIN_KNOWN).
+export function compositionPanel(notes) {
+  const comp = notes && notes.composition;
+  if (!comp || (!comp.allies && !comp.enemies)) return null;
+  const { allies, enemies } = comp;
+  return el('section', { class: 'panel team-comp' },
+    el('div', { class: 'panel-title' }, el('h2', {}, t('comp.title')),
+      allies ? el('span', { class: 'chip teal' }, t(`comp.style.${allies.style}`)) : null,
+      el('span', { class: 'muted small' }, t('comp.hint'))),
+    allies ? el('ul', { class: 'tips comp-plan' }, allies.plan.map((line) => el('li', {}, t(line.key, line.params)))) : null,
+    allies && allies.warnings.length ? el('ul', { class: 'tips comp-warnings', 'aria-label': t('comp.warnings') },
+      allies.warnings.map((w) => el('li', {}, t(w.key)))) : null,
+    enemies ? el('p', { class: 'comp-enemy' }, el('span', { class: 'chip minus' }, `${t('comp.enemyLabel')}: ${t(`comp.style.${enemies.style}`)}`),
+      el('span', {}, t(enemies.enemyLine.key, enemies.enemyLine.params))) : null);
 }

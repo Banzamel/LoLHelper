@@ -14,6 +14,10 @@ moves them into a numbered section automatically (see README → Versioning).
 - **Playing with your team**: tips on how to play with each ally from your role and champion (stay close to an
   enchanter, follow up on a catcher's hooks, wait for the engage, gank lanes with crowd control…), in Draft and on
   the loading screen.
+- **Team plan**: once three champions of a team are known, Draft and the loading screen name the composition
+  (engage and teamfight, protect the carry, poke, pick-offs, split push or mixed), give 2–3 lines on how to play
+  it and warn about its gaps (no frontline, almost only physical or magic damage, no engage, little crowd control),
+  plus one line on what the enemy team wants to do, in Polish and English.
 - **Loading screen** in the Match view: once the game starts loading, both teams with roles, ranks and briefs,
   before the game reports any data.
 
