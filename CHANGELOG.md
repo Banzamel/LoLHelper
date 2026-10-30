@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-10-30
+
 ### Fixed
 - In-game widget: hovering an item icon shows its name. The widget still lets clicks through to the game,
   it now only receives mouse movement.
@@ -214,7 +216,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/Banzamel/LoLHelper/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/Banzamel/LoLHelper/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/Banzamel/LoLHelper/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/Banzamel/LoLHelper/compare/v0.8.1...v0.9.0
