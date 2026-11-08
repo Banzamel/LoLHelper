@@ -1,0 +1,68 @@
+// In-game adjustments: what the enemies actually bought changes the threat picture (damage
+// split by gold spent, defensive stacking, healing items), and how fed each enemy is decides
+// how much their damage counts.
+import type { Db, Item } from '../../data/types.ts';
+import type { BuildRequest, Threats } from '../types.ts';
+
+const DMG_AD = ['ad', 'lethality', 'armorPen', 'crit', 'as'];
+const DMG_AP = ['ap', 'magicPen', 'magicPenFlat'];
+const DEF = ['armor', 'mr', 'hp'];
+const STAT_GOLD: Record<string, number> = { ad: 35, lethality: 30, armorPen: 40, crit: 40, as: 25, ap: 20, magicPen: 46, magicPenFlat: 31, armor: 20, mr: 18, hp: 2.67 };
+
+// Weight from which an enemy counts as fed (shown as a threat line).
+export const FED = 1.8;
+
+const goldIn = (stats: Record<string, number>, keys: string[]) => keys.reduce((s, k) => s + (stats[k] || 0) * STAT_GOLD[k], 0);
+
+// enemyItems: { championId: [itemId, ...] } -> adjusted copy of the threat profile `t`.
+// weights (threatWeights): a fed enemy's damage items count for more.
+export function applyEnemyItems(db: Db, t: Threats, enemyItems: BuildRequest['enemyItems'], weights: Record<string, number> = {}): Threats {
+  const entries = Object.entries(enemyItems || {}).map(([id, ids]) => ({
+    items: ids.map((i) => db.itemById[i]).filter((it): it is Item => !!it),
+    w: weights[id] || 1,
+  }));
+  const spent = entries.reduce((s, e) => s + e.items.reduce((g, it) => g + it.gold.total, 0), 0);
+  if (!entries.length || spent < 1500) return t;
+  let ad = 0;
+  let ap = 0;
+  let tanky = 0;
+  let healers = 0;
+  for (const { items, w } of entries) {
+    const sum = (keys: string[]) => items.reduce((s, it) => s + goldIn(it.features.stats, keys), 0);
+    const a = sum(DMG_AD);
+    const p = sum(DMG_AP);
+    const d = sum(DEF);
+    ad += a * w;
+    ap += p * w;
+    if (d > 2000 && d > (a + p)) tanky += 1;
+    if (items.some((it) => it.features.stats.lifesteal || it.features.stats.omnivamp || it.features.stats.hsp)) healers += 1;
+  }
+  const n = entries.length;
+  const out = { ...t };
+  if (ad + ap > 0) {
+    out.ad = 0.5 * t.ad + 0.5 * (ad / (ad + ap));
+    out.ap = 0.5 * t.ap + 0.5 * (ap / (ad + ap));
+  }
+  out.tanks = Math.max(t.tanks, tanky / n);
+  out.healing = Math.max(t.healing, healers / n);
+  out.live = true;
+  return out;
+}
+
+// How dangerous each enemy is right now, from their score and the gold in their items:
+// { championId: weight }, 1 = average, clamped to 0.4–3. Empty before the match has data.
+export function threatWeights(db: Db, enemyStats: BuildRequest['enemyStats'], enemyItems: BuildRequest['enemyItems']): Record<string, number> {
+  const ids = Object.keys(enemyStats || {});
+  if (!ids.length) return {};
+  const gold: Record<string, number> = Object.fromEntries(ids.map((id) => [id, ((enemyItems || {})[id] || [])
+    .reduce((s, i) => s + (db.itemById[i] ? db.itemById[i].gold.total : 0), 0)]));
+  const avgGold = ids.reduce((s, id) => s + gold[id], 0) / ids.length;
+  const out: Record<string, number> = {};
+  for (const id of ids) {
+    const { kills = 0, deaths = 0, assists = 0 } = (enemyStats || {})[id] || {};
+    const score = kills + 0.4 * assists - 0.6 * deaths;
+    const w = 1 + 0.08 * score + (avgGold > 500 ? 0.6 * ((gold[id] - avgGold) / avgGold) : 0);
+    out[id] = Math.round(Math.min(3, Math.max(0.4, w)) * 100) / 100;
+  }
+  return out;
+}

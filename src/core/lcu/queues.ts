@@ -2,7 +2,10 @@
 // Clash, role-based quick queues), plus Summoner's Rift custom games and the Practice Tool
 // (no assigned roles; never recorded into the history the app learns from). ARAM, blind pick,
 // rotating modes and custom games on other maps are skipped.
-const ROLE_QUEUES = {
+import type { RawJson } from '../shared/json.ts';
+import type { GameMode } from './types.ts';
+
+export const ROLE_QUEUES: Record<number, string> = {
   400: 'normalDraft',
   420: 'rankedSolo',
   440: 'rankedFlex',
@@ -17,15 +20,15 @@ const RIFT_CUSTOM_MODES = ['CLASSIC', PRACTICE_TOOL];
 const NO_QUEUE = -1;
 
 // Ranked stats to show: flex in flex games, solo/duo everywhere else.
-const rankedQueueOf = (queueId) => (queueId === 440 ? 'RANKED_FLEX_SR' : 'RANKED_SOLO_5x5');
+const rankedQueueOf = (queueId: number): GameMode['rankedQueue'] => (queueId === 440 ? 'RANKED_FLEX_SR' : 'RANKED_SOLO_5x5');
 
 // Custom games carry no queue (id -1); the map and the game mode come from the queue or,
 // when the client leaves them empty there, from the session's map.
-function customModeOf(session) {
+function customModeOf(session: RawJson): GameMode {
   const queue = session.gameData.queue || {};
   const map = session.map || {};
   const mapId = queue.mapId || map.id || null;
-  const gameMode = queue.gameMode || map.gameMode || '';
+  const gameMode: string = queue.gameMode || map.gameMode || '';
   return {
     queueId: NO_QUEUE,
     key: gameMode === PRACTICE_TOOL ? 'practice' : 'custom',
@@ -35,15 +38,14 @@ function customModeOf(session) {
   };
 }
 
-const isCustom = (session) => {
+const isCustom = (session: RawJson): boolean => {
   const data = session.gameData;
   const queue = data.queue;
   return !!data.isCustomGame || !!(queue && queue.gameMode === PRACTICE_TOOL) || !!(session.map && session.map.gameMode === PRACTICE_TOOL);
 };
 
 // Mode from /lol-gameflow/v1/session; null while the client is not in a lobby or game.
-// supported: the app shows its views; recorded: the finished match is saved and learned from.
-function modeOf(session) {
+export function modeOf(session: RawJson): GameMode | null {
   if (!session || !session.gameData) return null;
   if (isCustom(session)) return customModeOf(session);
   const queue = session.gameData.queue;
@@ -57,5 +59,3 @@ function modeOf(session) {
     rankedQueue: rankedQueueOf(queue.id),
   };
 }
-
-export { ROLE_QUEUES, modeOf };

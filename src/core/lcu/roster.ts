@@ -1,13 +1,17 @@
 // Players of the running match from /lol-gameflow/v1/session (both teams with the roles
 // picked in draft) plus each player's ranked stats from /lol-ranked/v1/ranked-stats/{puuid}.
-const POSITION = { TOP: 'TOP', JUNGLE: 'JUNGLE', MIDDLE: 'MIDDLE', BOTTOM: 'BOTTOM', UTILITY: 'SUPPORT' };
+import type { Db, Role } from '../data/types.ts';
+import type { RawJson } from '../shared/json.ts';
+import type { Lcu, Rank, RosterEntry } from './types.ts';
+
+const POSITION: Record<string, Role> = { TOP: 'TOP', JUNGLE: 'JUNGLE', MIDDLE: 'MIDDLE', BOTTOM: 'BOTTOM', UTILITY: 'SUPPORT' };
 const APEX = ['MASTER', 'GRANDMASTER', 'CHALLENGER'];
 
-const tierOf = (tier) => (tier && tier !== 'NONE' ? tier : null);
+const tierOf = (tier: string | undefined) => (tier && tier !== 'NONE' ? tier : null);
 
-function rankFrom(stats, queueType): any {
+export function rankFrom(stats: RawJson, queueType: string): Rank | null {
   if (!stats) return null;
-  const entry = (stats.queueMap && stats.queueMap[queueType]) || (stats.queues || []).find((q) => q.queueType === queueType);
+  const entry = (stats.queueMap && stats.queueMap[queueType]) || (stats.queues || []).find((q: RawJson) => q.queueType === queueType);
   if (!entry || !tierOf(entry.tier)) {
     // Not placed this season yet: fall back to where the player ended last season.
     const prev = entry && tierOf(entry.previousSeasonEndTier);
@@ -25,17 +29,17 @@ function rankFrom(stats, queueType): any {
   };
 }
 
-// Returns [{championId, team, position, puuid, rank}] or null when the teams are not known yet.
-async function fetchRoster(lcu, session, db, queueType) {
+// Both teams with ranks, or null when the teams are not known yet.
+export async function fetchRoster(lcu: Lcu, session: RawJson, db: Db, queueType: string): Promise<RosterEntry[] | null> {
   const data = session && session.gameData;
   if (!data || !(data.teamOne || []).length) return null;
-  const idOf = (key) => (db.byKey[key] ? db.byKey[key].id : null);
-  const players = [
-    ...(data.teamOne || []).map((p) => ({ p, team: 'ORDER' })),
-    ...(data.teamTwo || []).map((p) => ({ p, team: 'CHAOS' })),
+  const idOf = (key: number) => (db.byKey[key] ? db.byKey[key].id : null);
+  const players: { p: RawJson; team: RosterEntry['team'] }[] = [
+    ...(data.teamOne || []).map((p: RawJson) => ({ p, team: 'ORDER' })),
+    ...(data.teamTwo || []).map((p: RawJson) => ({ p, team: 'CHAOS' })),
   ];
   return Promise.all(players.map(async ({ p, team }) => {
-    let rank = null;
+    let rank: Rank | null = null;
     if (p.puuid) {
       try { rank = rankFrom(await lcu.get(`/lol-ranked/v1/ranked-stats/${p.puuid}`), queueType); } catch { /* bot or hidden */ }
     }
@@ -45,9 +49,7 @@ async function fetchRoster(lcu, session, db, queueType) {
 
 // The roster with the player's position filled in by `role` (the role chosen in Draft) when
 // the game assigns none (Practice Tool, custom games). Other players keep theirs.
-function withMyPosition(roster, puuid, role) {
+export function withMyPosition(roster: RosterEntry[] | null, puuid: string | null, role: Role | null): RosterEntry[] | null {
   if (!roster || !puuid || !role) return roster;
   return roster.map((p) => (p.puuid === puuid && !p.position ? { ...p, position: role } : p));
 }
-
-export { fetchRoster, rankFrom, withMyPosition };

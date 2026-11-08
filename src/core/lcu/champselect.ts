@@ -1,13 +1,20 @@
 // Converts the raw /lol-champ-select/v1/session payload into a compact draft state
 // (teams, positions, bans, current action) keyed by Data Dragon champion ids.
-const POSITION = { top: 'TOP', jungle: 'JUNGLE', middle: 'MIDDLE', bottom: 'BOTTOM', utility: 'SUPPORT' };
+import type { Db, Role } from '../data/types.ts';
+import type { RawJson } from '../shared/json.ts';
+import type { Draft, DraftMember } from './types.ts';
 
-function normalizeSession(session, db) {
+const POSITION: Record<string, Role> = { top: 'TOP', jungle: 'JUNGLE', middle: 'MIDDLE', bottom: 'BOTTOM', utility: 'SUPPORT' };
+
+// The draft without the inferred roles and rune page (LcuWatcher adds those).
+export type SessionDraft = Omit<Draft, 'enemyRoles' | 'allyRoles' | 'myRunes'>;
+
+export function normalizeSession(session: RawJson, db: Db): SessionDraft | null {
   if (!session || !session.myTeam) return null;
-  const idOf = (key) => (key && db.byKey[key] ? db.byKey[key].id : null);
-  const actions = (session.actions || []).flat();
+  const idOf = (key: number) => (key && db.byKey[key] ? db.byKey[key].id : null);
+  const actions: RawJson[] = (session.actions || []).flat();
 
-  const member = (m, ally) => ({
+  const member = (m: RawJson, ally: boolean): DraftMember => ({
     cellId: m.cellId,
     championId: idOf(m.championId),
     hoverId: ally ? idOf(m.championPickIntent) : null,
@@ -17,7 +24,8 @@ function normalizeSession(session, db) {
     locked: actions.some((a) => a.actorCellId === m.cellId && a.type === 'pick' && a.completed),
   });
 
-  const bans = actions.filter((a) => a.type === 'ban' && a.completed && a.championId).map((a) => idOf(a.championId)).filter(Boolean);
+  const bans = actions.filter((a) => a.type === 'ban' && a.completed && a.championId).map((a) => idOf(a.championId))
+    .filter((id): id is string => !!id);
   for (const id of [...((session.bans || {}).myTeamBans || []), ...((session.bans || {}).theirTeamBans || [])]) {
     const champ = idOf(id);
     if (champ && !bans.includes(champ)) bans.push(champ);
@@ -27,11 +35,9 @@ function normalizeSession(session, db) {
   return {
     gameId: session.gameId,
     phase: session.timer ? session.timer.phase : null,
-    myTeam: session.myTeam.map((m) => member(m, true)),
-    theirTeam: (session.theirTeam || []).map((m) => member(m, false)),
+    myTeam: session.myTeam.map((m: RawJson) => member(m, true)),
+    theirTeam: (session.theirTeam || []).map((m: RawJson) => member(m, false)),
     bans,
     myAction: current ? { id: current.id, type: current.type } : null,
   };
 }
-
-export { normalizeSession };

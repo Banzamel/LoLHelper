@@ -1,6 +1,6 @@
 // Locates and loads the active database: the downloaded copy in the app data folder when
 // present, otherwise the snapshot bundled with the installer (resources/data).
-import type { Db, DbMeta, RawDatabase } from '../types.ts';
+import type { Db, DbMeta, RawDatabase } from './types.ts';
 
 // Bump when the database layout changes; older databases are then ignored (re-download needed).
 export const SCHEMA = 3;
@@ -13,7 +13,7 @@ const parse = <T>(text: string | null, fallback: T): T => {
 };
 
 export async function readMeta(read: DataReader): Promise<DbMeta | null> {
-  return parse<DbMeta | null>(await read('meta.json').catch(() => null), null);
+  return parse<DbMeta | null>(await read('meta.json').catch((): null => null), null);
 }
 
 export function compareVersions(a: string, b: string): number {
@@ -44,7 +44,7 @@ export function indexDatabase(raw: RawDatabase): Db {
 }
 
 export async function readRawDatabase(read: DataReader): Promise<RawDatabase> {
-  const file = async <T>(name: string, fallback: T) => parse<T>(await read(name).catch(() => null), fallback);
+  const file = async <T>(name: string, fallback: T) => parse<T>(await read(name).catch((): null => null), fallback);
   const [meta, champions, items, runes, summoners] = await Promise.all([
     readMeta(read),
     file('champions.json', []),

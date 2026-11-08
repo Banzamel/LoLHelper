@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { indexDatabase } from '../src/core/data/store.ts';
-import type { Storage } from '../src/core/storage.ts';
-import type { Db } from '../src/core/types.ts';
+import type { Storage } from '../src/core/shared/storage.ts';
+import type { Db } from '../src/core/data/types.ts';
 
 export const DATA_DIR = path.join(import.meta.dirname, '..', 'resources', 'data');
 
@@ -36,3 +36,6 @@ export function nodeStorage(root: string): Storage {
 }
 
 export const tempDir = (prefix = 'lolh-') => fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+
+// Test fixtures hold only the fields a test is about; this types them as the full shape.
+export const fixture = <T>(value: unknown): T => value as T;

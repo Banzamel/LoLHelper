@@ -1,18 +1,20 @@
 // Text analysis of Data Dragon (en_US) ability and item descriptions.
 // Traits are detected with keyword rules, so they work for every champion and item
 // without a hand-written table — including new ones after a patch.
+import type { RawJson } from '../shared/json.ts';
+import type { ItemFeatures } from './types.ts';
 
 const ALLOWED_TAGS = new Set(['br', 'stats', 'attention', 'passive', 'active', 'rarityMythic', 'rarityLegendary',
   'physicalDamage', 'magicDamage', 'trueDamage', 'healing', 'shield', 'keyword', 'status', 'speed', 'OnHit',
   'scaleArmor', 'scaleMR', 'scaleHealth', 'scaleAD', 'scaleAP', 'scaleMana', 'buffedStat', 'nerfedStat', 'li', 'rules', 'flavorText', 'mainText']);
 
-function sanitizeHtml(html) {
+export function sanitizeHtml(html: string): string {
   return String(html)
     .replace(/<(\/?)([a-zA-Z]+)[^>]*>/g, (m, slash, tag) => (ALLOWED_TAGS.has(tag) ? `<${slash}${tag.toLowerCase()}>` : ''))
     .replace(/\{\{[^}]*\}\}/g, '');
 }
 
-function plain(html) {
+export function plain(html: string): string {
   return String(html).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/\{\{[^}]*\}\}/g, '?').trim();
 }
 
@@ -30,25 +32,25 @@ const SPELL_RULES = {
   zone: /\b(zone|field|area for \d|pool|wall)\b/i,
 };
 
-function spellText(s) {
+function spellText(s: RawJson): string {
   return `${s.description || ''} ${s.tooltip || ''}`;
 }
 
 // Returns counts of abilities that have each trait plus derived flags.
-function extractChampionTraits(en) {
+export function extractChampionTraits(en: RawJson): Record<string, number> {
   const counts = Object.fromEntries(Object.keys(SPELL_RULES).map((k) => [k, 0]));
   const texts = [...en.spells.map(spellText), en.passive.description || ''];
   for (const t of texts) {
     const clean = plain(t);
     for (const [k, re] of Object.entries(SPELL_RULES)) if (re.test(clean)) counts[k] += 1;
   }
-  const ranges = en.spells.map((s) => Math.max(...(s.range || [0]).map(Number).filter((n) => n < 25000)));
+  const ranges: number[] = en.spells.map((s: RawJson) => Math.max(...(s.range || [0]).map(Number).filter((n: number) => n < 25000)));
   counts.longRange = ranges.filter((r) => r >= 1000).length;
   counts.range = en.stats.attackrange;
   return counts;
 }
 
-const STAT_NAMES = {
+const STAT_NAMES: Record<string, string> = {
   'attack damage': 'ad', 'ability power': 'ap', armor: 'armor', 'magic resist': 'mr', health: 'hp',
   'attack speed': 'as', 'critical strike chance': 'crit', 'ability haste': 'haste', lethality: 'lethality',
   'armor penetration': 'armorPen', 'life steal': 'lifesteal', omnivamp: 'omnivamp', mana: 'mana',
@@ -56,8 +58,8 @@ const STAT_NAMES = {
   tenacity: 'tenacity', 'slow resist': 'slowResist', 'critical strike damage': 'critDmg',
 };
 
-function parseStats(desc) {
-  const stats: Record<string, any> = {};
+function parseStats(desc: string): Record<string, number> {
+  const stats: Record<string, number> = {};
   const block = (desc.match(/<stats>([\s\S]*?)<\/stats>/) || [])[1] || '';
   for (const line of block.split(/<br\s*\/?>/i)) {
     const m = plain(line).match(/^([\d.]+)(%?)\s+(.+)$/);
@@ -89,14 +91,13 @@ const ITEM_RULES = {
   armorShred: /reduc\w* .{0,30}(Armor|Magic Resist)/i,
 };
 
-function extractItemFeatures(en) {
-  const desc = en.description || '';
+export function extractItemFeatures(en: RawJson): ItemFeatures {
+  const desc: string = en.description || '';
   const passiveText = desc.replace(/<stats>[\s\S]*?<\/stats>/, '');
-  const flags: Record<string, any> = {};
+  const flags: Record<string, boolean> = {};
   for (const [k, re] of Object.entries(ITEM_RULES)) if (re.test(passiveText)) flags[k] = true;
   if ((en.tags || []).includes('OnHit')) flags.onHit = true;
   const passives = [...passiveText.matchAll(/<(passive|active)>([^<]+)<\/\1>/g)].map((m) => m[2].trim());
   return { stats: parseStats(desc), flags, passives };
 }
 
-export { extractChampionTraits, extractItemFeatures, sanitizeHtml, plain };
