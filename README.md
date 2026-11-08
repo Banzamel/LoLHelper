@@ -126,7 +126,8 @@ only Docker.
 Development switches: `LOLHELPER_LIVE=1` polls the Live Client Data API without waiting for the client's
 game phase (useful with a mock server on `https://127.0.0.1:2999`); `LOLHELPER_ROSTER=<file.json>` supplies
 the match roster (roles, ranks) without a League client; `LOLHELPER_USERDATA=<dir>` keeps settings and match
-history apart from the real ones.
+history apart from the real ones; with it, `LOLHELPER_MIGRATE_FROM=<dir>` tries the one-time copy of the Electron
+app's data from `<dir>\LoL Helper` (a copy of `%APPDATA%\LoL Helper`).
 
 ### Project layout
 | Path | Contents |

@@ -15,8 +15,14 @@ use crate::window::tracker;
 pub fn setup(app: &mut App) -> Result<()> {
     let handle = app.handle().clone();
     let paths = DataPaths::new(&handle)?;
-    if std::env::var_os("LOLHELPER_USERDATA").is_none() {
-        let roaming = handle.path().data_dir()?;
+    // A development data folder gets no migration unless LOLHELPER_MIGRATE_FROM names a folder
+    // that holds a "LoL Helper" folder of the Electron app (to try the migration on a copy).
+    let roaming = match (std::env::var_os("LOLHELPER_MIGRATE_FROM"), std::env::var_os("LOLHELPER_USERDATA")) {
+        (Some(dir), _) => Some(std::path::PathBuf::from(dir)),
+        (None, None) => Some(handle.path().data_dir()?),
+        (None, Some(_)) => None,
+    };
+    if let Some(roaming) = roaming {
         match migrate_electron_data(&roaming, &paths.root) {
             Ok(0) => {}
             Ok(n) => eprintln!("[migrate] copied {n} files from the Electron app"),
