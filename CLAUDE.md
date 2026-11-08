@@ -43,9 +43,13 @@ scripts/          fetch-data.ts, version.cjs, release-manifests.js, docker-build
 docker/build.sh   Windows installer built in the tauri-build image (cargo-xwin + NSIS)
 ```
 
-Data folder: `%APPDATA%\pl.banzamel.lolhelper` (settings.json, profiles/<puuid>/…, data/ = a
-downloaded database). On first start the Electron app's `%APPDATA%\LoL Helper` is copied over
-(src-tauri/src/storage/migrate.rs); the old folder is never deleted.
+Data folder: `<install dir>\data` (settings.json, profiles/<puuid>/…, data/ = a downloaded database,
+webview/ = the WebView2 profile of both windows); the bundled database is `<install dir>\database`.
+Nothing is written to %APPDATA%, %LOCALAPPDATA% or the user profile (the HTTP plugin's cookie store is
+off; the windows are created in Rust with their WebView2 data directory). The installer never installs
+under the user profile; on first start the Electron app's `%APPDATA%\LoL Helper` is copied over,
+checked and deleted (src-tauri/src/storage/migrate.rs). Uninstall removes `data\` only when the
+player ticks "Delete the application data"; updates keep it.
 
 ## Code structure
 

@@ -14,7 +14,10 @@ UI languages: **Polish** (default) and **English**.
 
 Get the installer from **[Releases](https://github.com/Banzamel/LoLHelper/releases/latest)**
 (`LoLHelper-Setup-<version>.exe`). The installer lets you pick the folder; by default it installs next
-to the game (`<drive>:\Riot Games\LoL Helper`) when a Riot Games folder exists.
+to the game (`T:\Riot Games\LoL Helper` when that Riot Games folder exists, else `C:\Riot Games\LoL Helper`).
+The app keeps everything — settings, history, the downloaded database, its browser cache — in the `data`
+folder next to the program, nothing in AppData; uninstalling deletes it only when you tick *Delete the
+application data*.
 
 The app is not code-signed, so Windows SmartScreen may warn on first launch — choose *More info → Run anyway*.
 From version 0.2.0 the app **updates itself** from GitHub Releases (banner under the title bar). Installs of the

@@ -12,42 +12,43 @@
   },
   "app": {
     "withGlobalTauri": false,
-    "windows": [
-      {
-        "label": "main",
-        "title": "LoL Helper",
-        "url": "index.html",
-        "width": 1360,
-        "height": 860,
-        "minWidth": 1100,
-        "minHeight": 700,
-        "decorations": false,
-        "visible": false,
-        "center": true,
-        "backgroundColor": "#010a13"
-      }
-    ],
+    "windows": [],
     "security": {
       "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost https://ddragon.leagueoflegends.com data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost",
-      "assetProtocol": { "enable": true, "scope": [] }
+      "assetProtocol": {
+        "enable": true,
+        "scope": []
+      }
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": [
+      "nsis"
+    ],
     "publisher": "Rafał Polak",
     "copyright": "© Rafał Polak (Banzamel), MIT License",
     "category": "Game",
     "shortDescription": "League of Legends assistant: counter-picks, builds, match history",
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
-    "resources": { "../resources/data/": "data/" },
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../resources/data/": "database/"
+    },
     "createUpdaterArtifacts": false,
     "windows": {
       "nsis": {
         "installMode": "currentUser",
         "installerHooks": "./windows/hooks.nsh",
         "installerIcon": "icons/icon.ico",
-        "languages": ["Polish", "English"],
+        "languages": [
+          "Polish",
+          "English"
+        ],
         "displayLanguageSelector": false
       }
     }
@@ -55,8 +56,12 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDU2NzIwOTEyNDUzNzJGOTQKUldTVUx6ZEZFZ2x5Vm04VlJJUm16YnJKTWNmbXdXeFVvOVJvNVEzOGdFZEtCL3ozdWRaVENjajAK",
-      "endpoints": ["https://github.com/Banzamel/LoLHelper/releases/latest/download/latest.json"],
-      "windows": { "installMode": "passive" }
+      "endpoints": [
+        "https://github.com/Banzamel/LoLHelper/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

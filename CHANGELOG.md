@@ -12,8 +12,12 @@ moves them into a numbered section automatically (see README → Versioning).
   features. The League client connection, the game's live data and the in-game widget run natively.
 - **Moving from the Electron versions**: an installed Electron version (0.12.x and older) updates itself into this
   one. The installer removes the old app (keeping its folder choice) and the app copies its settings, champion
-  pools, recorded matches, match history cache and a downloaded database on first start
-  (from `%APPDATA%\LoL Helper`, which stays untouched).
+  pools, recorded matches, match history cache and a downloaded database on first start, then deletes
+  `%APPDATA%\LoL Helper`.
+- **Everything stays in the app's folder**: settings, history, the downloaded database and the browser cache
+  are in `data` next to the program; nothing is written to AppData. The installer never installs into the user
+  profile (default `T:\Riot Games\LoL Helper` or `C:\Riot Games\LoL Helper`); uninstalling removes the data
+  only when *Delete the application data* is ticked.
 - App updates are signed and installed with a short progress window; the app restarts by itself.
 - In-game widget: hovering an item still shows its name while every click goes through to the game.
 

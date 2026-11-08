@@ -60,7 +60,7 @@ pub fn window(app: &AppHandle) -> Result<WebviewWindow> {
 
 /// Created hidden at start-up, at the right edge of the primary screen's work area; the
 /// frontend moves it to the saved place.
-pub fn create(app: &AppHandle) -> Result<()> {
+pub fn create(app: &AppHandle, webview_data: &std::path::Path) -> Result<()> {
     let window = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("overlay.html".into()))
         .title("LoL Helper — widget")
         .inner_size(WIDTH, HEIGHT)
@@ -75,6 +75,7 @@ pub fn create(app: &AppHandle) -> Result<()> {
         .focused(false)
         .focusable(false)
         .visible(false)
+        .data_directory(webview_data.to_path_buf())
         .build()?;
     if let Some(monitor) = window.primary_monitor()? {
         let scale = monitor.scale_factor();
