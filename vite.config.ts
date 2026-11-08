@@ -11,6 +11,8 @@ export default defineConfig({
     target: 'es2022',
     outDir: 'dist',
     emptyOutDir: true,
+    // One desktop bundle loaded from disk; splitting it would not make it faster.
+    chunkSizeWarningLimit: 2000,
     rollupOptions: { input: { main: 'index.html', overlay: 'overlay.html' } },
   },
   test: { include: ['test/**/*.test.ts'] },

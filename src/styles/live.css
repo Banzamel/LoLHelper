@@ -94,5 +94,3 @@ body { display: flex; flex-direction: column; }
 .roster-name { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .roster-name strong { color: var(--gold-hi); }
 
-@media (max-width: 1250px) {
-  .loadout, }
