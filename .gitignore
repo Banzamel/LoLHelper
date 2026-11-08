@@ -1,6 +1,8 @@
 node_modules/
 dist/
+release/
 resources/data/
+src-tauri/target/
+src-tauri/gen/
 .idea/
-build/icon.ico
 release-notes.md
