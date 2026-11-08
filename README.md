@@ -17,7 +17,8 @@ Get the installer from **[Releases](https://github.com/Banzamel/LoLHelper/releas
 to the game (`<drive>:\Riot Games\LoL Helper`) when a Riot Games folder exists.
 
 The app is not code-signed, so Windows SmartScreen may warn on first launch — choose *More info → Run anyway*.
-From version 0.2.0 the app **updates itself** from GitHub Releases (banner under the title bar).
+From version 0.2.0 the app **updates itself** from GitHub Releases (banner under the title bar). Installs of the
+Electron versions (up to 0.12.x) update into the current one and keep their settings, champion pools and history.
 
 ## Features
 
@@ -101,52 +102,65 @@ recommendations. ARAM, Blind Pick, rotating modes and custom games on other maps
 
 ## Development
 
-Requirements: Windows, Node.js 22+.
+Built with **Tauri 2** (Rust) and **React 19 + TypeScript** (Vite). The app logic and UI run in the
+webview; Rust handles what the webview cannot: the League client connection (its HTTPS API and event
+WebSocket use Riot's self-signed certificate), the game's Live Client Data API, the in-game widget window
+(transparent, always on top, click-through) and file access limited to the app's data folder.
+
+Requirements: Node.js 22+. To run the app from source (`npm start`) also Rust and MSVC on Windows; the
+installer can be built without them through Docker.
 
 ```bash
 npm install
 npm run fetch-data   # downloads Data Dragon data + icons into resources/data
-npm start            # run the app
-npm test             # engine tests (node:test)
-npm run dist         # build the installer -> dist/LoLHelper-Setup-<version>.exe
+npm test             # Vitest (pure logic in src/core)
+npm run typecheck    # tsc for the app and the tests
+npm start            # tauri dev (needs Rust + MSVC)
+npm run dist         # installer via Docker (image tauri-build) -> release/LoLHelper-Setup-<version>.exe
 ```
 
+`npm run dist` runs `docker/build.sh` in the `tauri-build` image (Rust, cargo-xwin, NSIS, Node) with
+named volumes for node_modules, the cargo registry, the MSVC SDK cache and the build target; the host needs
+only Docker.
+
 Development switches: `LOLHELPER_LIVE=1` polls the Live Client Data API without waiting for the client's
-game phase (useful with a mock server on `https://127.0.0.1:2999`) and ignores the client's game phase; `LOLHELPER_ROSTER=<file.json>` supplies
+game phase (useful with a mock server on `https://127.0.0.1:2999`); `LOLHELPER_ROSTER=<file.json>` supplies
 the match roster (roles, ranks) without a League client; `LOLHELPER_USERDATA=<dir>` keeps settings and match
 history apart from the real ones.
 
 ### Project layout
 | Path | Contents |
 |---|---|
-| `src/main/main.js` | Electron main process: window, `app://` protocol, IPC |
-| `src/main/lcu/` | League client connection: credentials, REST + WebSocket, champion select, item sets, rune pages and spells, match history (`matches.js`), Live Client Data API |
-| `src/main/app-updater.js` | Self-update from GitHub Releases (electron-updater) |
-| `src/main/overlay.js` | In-game overlay widget window, hotkeys and visibility |
-| `src/main/data/` | Database builder (Data Dragon + Meraki), text parsing, data store |
-| `src/main/engine/` | Counter scoring, item builds, runes/spells/skills (`loadout.js`), in-game adjustments (`live.js`), learning from history (`history.js`), play-style analysis (`style.js`), role inference, curated `knowledge.js` |
-| `src/renderer/` | UI (vanilla JS modules + CSS), `lang/*.json` translations |
-| `scripts/` | Data download, icon generation, versioning, installer hooks |
-| `test/` | Engine tests |
+| `src/core/` | Pure logic with tests in `test/core`: database builder and parsing, counter scoring, item builds, runes/spells/skills, in-game adjustments, learning from history, team notes, LCU and live-game parsing, match history, settings, simulated match |
+| `src/features/` | One folder per feature (services, hooks, components, views; public API in `index.ts`) |
+| `src/platform/` | The only code using the Tauri API: Rust commands, events, storage, windows, hotkeys, updater |
+| `src/shared/` | UI building blocks (icons, charts, modal/tooltip/toast), hooks, i18n, small libraries |
+| `src/app/` | Window entries, service wiring, start-up, title bar, navigation |
+| `src/lang/`, `src/styles/` | Translations, CSS |
+| `src-tauri/` | Rust: LCU connection, live game, widget window, file access, Electron data migration, installer hooks |
+| `scripts/` | Data download, versioning, release manifests, Docker build, icon generation |
 
 ### Conventions
-- Code and comments in English; every user-facing text is a translation key in `src/renderer/lang`.
-- New language: add `src/renderer/lang/<code>.json` and an entry in `src/main/i18n.js`
-  (maps the app language to a Data Dragon locale).
-- Matchup knowledge lives in `src/main/engine/knowledge.js` (enemy → champions that do well against it);
-  ids are Data Dragon ids and are validated by the tests.
+- Code and comments in English; every user-facing text is a translation key in `src/lang`.
+- New language: add `src/lang/<code>.json`, register it in `src/shared/i18n/Translator.ts` and add an entry
+  in `src/core/data/locales.ts` (maps the app language to a Data Dragon locale).
+- Matchup knowledge lives in `src/core/engine/knowledge/counters.ts` (enemy → champions that do well against
+  it); ids are Data Dragon ids and are validated by the tests.
+- Code structure rules (file size, folders, typing): see [CLAUDE.md](CLAUDE.md).
 
 ## Versioning
 
-[Semantic Versioning](https://semver.org/); `package.json` is the single source of the version (shown in
-*Settings → About*). Changes are recorded in [CHANGELOG.md](CHANGELOG.md).
+[Semantic Versioning](https://semver.org/); `package.json` is the single source of the version (Tauri reads it,
+shown in *Settings → About*). Changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 1. Describe your changes under `## [Unreleased]` in `CHANGELOG.md`.
 2. Run `npm run release:patch` (or `release:minor` / `release:major`) — bumps the version, moves the
    changelog entries into a dated section, commits and creates the `v<version>` tag.
 3. `git push --follow-tags` — GitHub Actions checks that the tag, `package.json` and the changelog agree,
-   builds the installer and publishes a GitHub Release with the `.exe`, its `.blockmap` and `latest.yml`
-   (used by the in-app updater); the release notes are the version's CHANGELOG section.
+   builds the installer signed for the updater (secrets `TAURI_SIGNING_PRIVATE_KEY` and
+   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) and publishes a GitHub Release with the setup, its `.sig`,
+   `latest.json` (Tauri updater) and `latest.yml` (lets Electron installs up to 0.12.x update into it); the
+   release notes are the version's CHANGELOG section.
 
 ## Legal
 

@@ -7,6 +7,19 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Changed
+- **Rebuilt on Tauri 2 and React** instead of Electron: a much smaller installer and app, same views, look and
+  features. The League client connection, the game's live data and the in-game widget run natively.
+- **Moving from the Electron versions**: an installed Electron version (0.12.x and older) updates itself into this
+  one. The installer removes the old app (keeping its folder choice) and the app copies its settings, champion
+  pools, recorded matches, match history cache and a downloaded database on first start
+  (from `%APPDATA%\LoL Helper`, which stays untouched).
+- App updates are signed and installed with a short progress window; the app restarts by itself.
+- In-game widget: hovering an item still shows its name while every click goes through to the game.
+
+### Removed
+- Development: the screenshot helper (`LOLHELPER_CAPTURE`), which relied on Electron.
+
 ## [0.12.0] - 2026-10-30
 
 ### Added
