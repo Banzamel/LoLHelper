@@ -5,6 +5,7 @@ import '../styles/components.css';
 import '../styles/views.css';
 import '../styles/live.css';
 import '../styles/app.css';
+import '../styles/app-history.css';
 import { mainWindow } from '../platform/index.ts';
 import { ServicesProvider } from '../shared/hooks/services.tsx';
 import { App } from './App.tsx';
