@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-11-08
+
 ### Changed
 - **One title bar for LoL Helper, WinRate and PC Cleaner**: the minimize, maximize and close buttons have sharp
   Windows 11-style icons at every display scale (restore shows two squares while the window is maximized), and on
@@ -273,7 +275,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/Banzamel/LoLHelper/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/Banzamel/LoLHelper/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/Banzamel/LoLHelper/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/Banzamel/LoLHelper/compare/v0.10.1...v0.11.0
