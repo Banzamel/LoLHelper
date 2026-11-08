@@ -112,8 +112,14 @@ Function LolHelperGuiInit
 FunctionEnd
 
 !macro NSIS_HOOK_PREINSTALL
-  ; Also covers silent installs (electron-updater) and a folder typed into the wizard.
+  ; Also covers silent installs (electron-updater) and a folder typed into the wizard. The
+  ; template's install section already created the folder it had (SetOutPath before this
+  ; hook); when it is redirected, that empty folder goes again (RMDir keeps a non-empty one).
+  StrCpy $R4 $INSTDIR
   !insertmacro LOLHELPER_SAFE_DIR
+  ${If} $R4 != $INSTDIR
+    RMDir $R4
+  ${EndIf}
   SetOutPath $INSTDIR
   !insertmacro LOLHELPER_REMOVE_ELECTRON
   SetOutPath $INSTDIR
