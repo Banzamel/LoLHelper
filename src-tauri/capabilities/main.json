@@ -1,0 +1,30 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "The main window: window controls, events, hotkeys of the widget, Data Dragon downloads, links and app updates.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-show",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-start-dragging",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister-all",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://ddragon.leagueoflegends.com/*" },
+        { "url": "https://cdn.merakianalytics.com/riot/lol/resources/latest/*" }
+      ]
+    },
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://*" }]
+    },
+    "updater:default",
+    "process:allow-restart"
+  ]
+}
