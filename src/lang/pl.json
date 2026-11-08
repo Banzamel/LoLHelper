@@ -255,6 +255,7 @@
   "common.loading": "Ładowanie…",
   "window.minimize": "Minimalizuj",
   "window.maximize": "Maksymalizuj",
+  "window.restore": "Przywróć",
   "window.close": "Zamknij",
   "nav.live": "Mecz",
   "threat.fromItems": "Uwzględnia przedmioty wrogów",

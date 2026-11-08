@@ -1,19 +1,11 @@
-// Window actions: the frameless main window's controls, and the widget window (drawn by
-// Rust: shown without focus, click-through outside move mode).
+// Window actions: the frameless main window (its title bar adapter is windowFrame.ts), and the
+// widget window (drawn by Rust: shown without focus, click-through outside move mode).
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { commands } from './commands.ts';
 
-export type WindowAction = 'minimize' | 'maximize' | 'close';
-
 export const mainWindow = {
   show: () => getCurrentWindow().show(),
-  action(action: WindowAction) {
-    const win = getCurrentWindow();
-    if (action === 'minimize') return win.minimize();
-    if (action === 'maximize') return win.toggleMaximize();
-    return win.close();
-  },
   setAlwaysOnTop: (on: boolean) => getCurrentWindow().setAlwaysOnTop(on),
 };
 

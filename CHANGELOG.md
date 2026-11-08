@@ -7,6 +7,12 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Changed
+- **One title bar for LoL Helper, WinRate and PC Cleaner**: the minimize, maximize and close buttons have sharp
+  Windows 11-style icons at every display scale (restore shows two squares while the window is maximized), and on
+  Windows 10 the window has a thin border on all four sides, the top included (Windows 11 draws its own border,
+  shadow and rounded corners). A maximized window has no border.
+
 ## [0.13.0] - 2026-11-08
 
 ### Changed

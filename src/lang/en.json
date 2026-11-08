@@ -255,6 +255,7 @@
   "common.loading": "Loading…",
   "window.minimize": "Minimize",
   "window.maximize": "Maximize",
+  "window.restore": "Restore",
   "window.close": "Close",
   "nav.live": "Match",
   "threat.fromItems": "Includes enemy items",
