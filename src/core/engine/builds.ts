@@ -1,0 +1,239 @@
+// Item build recommendation. Items are scored from their parsed stats against the
+// champion's class weights, then adjusted for the enemy laner and enemy team threats
+// (damage type, healing, tanks, burst, crowd control, auto-attackers, shields).
+import { recommendLoadout } from './loadout.ts';
+import { itemLessons } from './history.ts';
+import { applyEnemyItems, nextPurchase, purchaseOrder, threatWeights, FED } from './live.ts';
+
+const GOLD = { ad: 35, ap: 20, armor: 20, mr: 18, hp: 2.67, as: 25, crit: 40, haste: 26.7, lethality: 30, armorPen: 40,
+  magicPen: 46, magicPenFlat: 31, lifesteal: 37.5, omnivamp: 40, mana: 1.4, manaRegen: 3, hpRegen: 3, hsp: 66, tenacity: 10, msPct: 39 };
+
+const WEIGHTS = {
+  marksman: { ad: 1, as: 1, crit: 1.2, lifesteal: 0.5, armorPen: 0.7, msPct: 0.3 },
+  'mage-burst': { ap: 1.1, magicPen: 0.5, magicPenFlat: 1, haste: 0.8, mana: 0.6 },
+  'mage-battle': { ap: 1, hp: 0.7, haste: 0.7, magicPen: 0.6, mana: 0.3, omnivamp: 0.3 },
+  'mage-artillery': { ap: 1.1, haste: 1, mana: 0.7, magicPen: 0.5, magicPenFlat: 0.8 },
+  'assassin-ad': { ad: 1.1, lethality: 1.2, haste: 0.8, msPct: 0.4, armorPen: 0.5 },
+  bruiser: { ad: 1, hp: 0.9, haste: 0.8, armor: 0.35, mr: 0.3, omnivamp: 0.4, lifesteal: 0.2, as: 0.2, armorPen: 0.4 },
+  'ap-bruiser': { ap: 1, hp: 0.8, haste: 0.6, armor: 0.3, mr: 0.3, omnivamp: 0.5, magicPen: 0.4, as: 0.2 },
+  tank: { hp: 1, armor: 1, mr: 1, haste: 0.6 },
+  enchanter: { hsp: 1.2, haste: 1, ap: 0.5, manaRegen: 1, mana: 0.3, hp: 0.2 },
+  'support-tank': { hp: 0.9, armor: 0.8, mr: 0.8, haste: 0.8 },
+};
+
+// UI texts are translation keys: class.<cls>, stat.<stat>, build.<reason>, threat.<threat>.
+const has = (c, list) => c.archetypes.some((a) => list.includes(a));
+
+function classOf(c, role) {
+  const ap = c.damageType === 'AP';
+  if (has(c, ['MARKSMAN']) && !ap) return 'marksman';
+  if (has(c, ['ENCHANTER'])) return 'enchanter';
+  // Fighters tagged TANK (Xin Zhao, Warwick, Garen, Sett…) are bruisers; only pure tanks count here.
+  const tanky = has(c, ['VANGUARD', 'WARDEN'])
+    || (has(c, ['TANK']) && c.ratings.damage <= 2 && !has(c, ['FIGHTER', 'DIVER', 'JUGGERNAUT', 'SKIRMISHER']));
+  if (tanky) return role === 'SUPPORT' ? 'support-tank' : 'tank';
+  if (has(c, ['CATCHER'])) return ap ? 'support-tank' : 'assassin-ad';
+  if (has(c, ['ASSASSIN']) && !ap && (c.ratings.toughness <= 1 || !has(c, ['FIGHTER', 'DIVER', 'JUGGERNAUT']))) return 'assassin-ad';
+  if (ap && has(c, ['FIGHTER', 'JUGGERNAUT', 'DIVER', 'SKIRMISHER']) && c.attackType === 'MELEE') return 'ap-bruiser';
+  if (ap && has(c, ['BATTLEMAGE'])) return 'mage-battle';
+  if (ap && has(c, ['ARTILLERY'])) return 'mage-artillery';
+  if (ap) return 'mage-burst';
+  if (has(c, ['MARKSMAN'])) return 'marksman';
+  return 'bruiser';
+}
+
+// weightOf(champion): how dangerous that enemy is in the running match (1 = average);
+// a fed enemy shifts the threat profile towards what they deal.
+function analyzeThreats(laner, enemies, weightOf: (e: any) => number = () => 1) {
+  const list = [...(laner ? [laner, laner] : []), ...enemies.filter((e) => !laner || e.id !== laner.id)];
+  const n = list.reduce((s, e) => s + weightOf(e), 0) || 1;
+  const count = (fn) => list.reduce((s, e) => s + (fn(e) ? weightOf(e) : 0), 0) / n;
+  return {
+    ad: count((e) => e.damageType === 'AD'),
+    ap: count((e) => e.damageType === 'AP'),
+    healing: count((e) => e.traits.heal >= 2 || has(e, ['ENCHANTER'])),
+    tanks: count((e) => e.ratings.toughness >= 3 || has(e, ['TANK', 'VANGUARD', 'WARDEN'])),
+    burstAD: count((e) => e.damageType === 'AD' && has(e, ['ASSASSIN'])),
+    burstAP: count((e) => e.damageType === 'AP' && has(e, ['BURST', 'ASSASSIN'])),
+    cc: list.reduce((s, e) => s + e.traits.hardCC * weightOf(e), 0) / n,
+    autoAttack: count((e) => has(e, ['MARKSMAN', 'SKIRMISHER'])),
+    shields: count((e) => e.traits.shield >= 2),
+    empty: !list.length,
+  };
+}
+
+// Proven core items per class, best first. Stat value alone misses what passives give
+// (Trinity Force's Spellblade, Sterak's Gage's lifeline), so these get a bonus.
+const CLASS_CORE = {
+  bruiser: ['Trinity Force', 'Sundered Sky', 'Black Cleaver', "Sterak's Gage", "Death's Dance", 'Spear of Shojin', 'Eclipse', 'Hullbreaker', 'Titanic Hydra', 'Ravenous Hydra'],
+  marksman: ['Infinity Edge', 'Kraken Slayer', 'Yun Tal Wildarrows', 'The Collector', 'Phantom Dancer', "Lord Dominik's Regards", 'Bloodthirster', "Runaan's Hurricane", 'Statikk Shiv', 'Navori Flickerblade'],
+  'assassin-ad': ["Youmuu's Ghostblade", 'Profane Hydra', 'Voltaic Cyclosword', 'Edge of Night', "Serylda's Grudge", 'Axiom Arc', 'Hubris', 'The Collector', 'Eclipse'],
+  'mage-burst': ['Stormsurge', 'Shadowflame', 'Malignance', "Rabadon's Deathcap", 'Void Staff', "Zhonya's Hourglass", 'Lich Bane', 'Blackfire Torch'],
+  'mage-battle': ["Liandry's Torment", "Rylai's Crystal Scepter", 'Malignance', 'Cosmic Drive', "Rabadon's Deathcap", 'Void Staff', "Zhonya's Hourglass", 'Blackfire Torch'],
+  'mage-artillery': ['Malignance', 'Blackfire Torch', 'Shadowflame', "Rabadon's Deathcap", 'Void Staff', "Liandry's Torment"],
+  'ap-bruiser': ['Riftmaker', "Liandry's Torment", 'Hextech Rocketbelt', 'Cosmic Drive', "Nashor's Tooth", "Zhonya's Hourglass", "Rabadon's Deathcap"],
+  tank: ['Heartsteel', 'Sunfire Aegis', "Jak'Sho, The Protean", 'Hollow Radiance', 'Unending Despair', "Randuin's Omen", 'Kaenic Rookern', 'Force of Nature', "Warmog's Armor", "Dead Man's Plate"],
+};
+
+function coreBonus(item, cls) {
+  const list = CLASS_CORE[cls];
+  const i = list ? list.indexOf(item.nameEn) : -1;
+  return i < 0 ? 0 : 1.6 - i * 0.08;
+}
+
+function baseScore(item, w, champ) {
+  let score = 0;
+  const contrib: any[] = [];
+  for (const [stat, value] of Object.entries<number>(item.features.stats)) {
+    const part = (w[stat] || 0) * value * (GOLD[stat] || 0);
+    if (part > 0) contrib.push([stat, part]);
+    score += part;
+  }
+  if (champ.resource !== 'MANA' && item.features.stats.mana) score *= 0.35;
+  contrib.sort((a, b) => b[1] - a[1]);
+  return { score: score / 1000, top: [...new Set(contrib.slice(0, 3).map(([s]) => (s === 'magicPenFlat' ? 'magicPen' : s)))] };
+}
+
+function situational(item, cls, t) {
+  const f = item.features.flags;
+  const s = item.features.stats;
+  const reasons: any[] = [];
+  const add = (v, key) => reasons.push({ v, key });
+  const squishy = !['tank', 'support-tank', 'bruiser', 'ap-bruiser'].includes(cls);
+  const dealsDamage = !['enchanter', 'support-tank', 'tank'].includes(cls);
+  if (f.grievous && t.healing >= 0.3) add(3 * t.healing + 1, 'build.grievous');
+  if (dealsDamage && (s.armorPen || s.magicPen || f.maxHpDamage || f.armorShred) && t.tanks >= 0.35) add(2.5 * t.tanks, 'build.penVsTanks');
+  if (s.armor && t.ad >= 0.6) add(2 * t.ad * (squishy ? 0.7 : 1), 'build.armor');
+  if (s.mr && t.ap >= 0.5) add(2 * t.ap * (squishy ? 0.7 : 1), 'build.mr');
+  if (f.stasis && (t.burstAD + t.burstAP) >= 0.25) add(2.5, 'build.stasis');
+  if ((f.revive || f.lifeline) && t.burstAD + t.burstAP >= 0.25 && squishy) add(2, 'build.surviveBurst');
+  if (f.spellshield && t.ap >= 0.5) add(1.5, 'build.spellshield');
+  if ((f.cleanse || s.tenacity) && t.cc >= 1.6) add(2, 'build.cleanse');
+  if ((f.antiAttackSpeed || f.blockAttacks || f.thorns || f.antiCrit) && t.autoAttack >= 0.4) add(2 * t.autoAttack + 0.5, 'build.antiAuto');
+  if (f.antiShield && t.shields >= 0.3) add(2, 'build.antiShield');
+  return reasons;
+}
+
+function lateItem(item) {
+  const s = item.features.stats;
+  if (s.magicPen || s.armorPen >= 30) return 2;
+  if (Object.keys(s).length === 1 && (s.ap >= 120 || s.ad >= 60)) return 1;
+  return 0;
+}
+
+function conflicts(item, chosen) {
+  const p = new Set(item.features.passives.filter((x) => x !== 'ACTIVE'));
+  return chosen.some((c) => c.features.passives.some((x) => p.has(x))
+    || (c.features.flags.grievous && item.features.flags.grievous)
+    || (c.features.flags.stasis && item.features.flags.stasis)
+    || (c.features.flags.lifeline && item.features.flags.lifeline));
+}
+
+function pickStarters(db, cls, role, laner) {
+  const byName = (n) => db.items.filter((i) => i.nameEn === n).sort((a, b) => a.id - b.id)[0];
+  const potion = byName('Health Potion');
+  let main;
+  if (role === 'SUPPORT') main = db.items.find((i) => i.category === 'support' && i.nameEn === 'World Atlas') || db.items.find((i) => i.category === 'support');
+  else if (role === 'JUNGLE') main = byName(cls === 'tank' ? 'Mosstomper Seedling' : (cls === 'assassin-ad' ? 'Gustwalker Hatchling' : 'Scorchclaw Pup'));
+  else if (['mage-burst', 'mage-battle', 'mage-artillery', 'enchanter'].includes(cls)) main = byName("Doran's Ring");
+  else if (cls === 'tank' || (cls === 'bruiser' && laner && laner.attackType === 'RANGED')) main = byName("Doran's Shield");
+  else if (cls === 'ap-bruiser') main = byName("Doran's Ring");
+  else main = byName("Doran's Blade");
+  const potions = main && main.nameEn === "Doran's Ring" ? 2 : 1;
+  return [main && { id: main.id, count: 1 }, potion && { id: potion.id, count: role === 'SUPPORT' ? 2 : potions }].filter(Boolean);
+}
+
+function pickBoots(db, cls, t) {
+  const byName = (n) => db.items.find((i) => i.nameEn === n && i.category === 'boots');
+  let name;
+  let reason;
+  if (t.cc >= 2 || (t.ap >= 0.6 && cls !== 'marksman')) { name = "Mercury's Treads"; reason = 'build.bootsMercury'; }
+  else if (t.ad >= 0.6 && (t.autoAttack >= 0.4 || t.burstAD >= 0.2)) { name = 'Plated Steelcaps'; reason = 'build.bootsSteelcaps'; }
+  else if (cls === 'marksman') { name = "Berserker's Greaves"; reason = 'build.bootsBerserker'; }
+  else if (['mage-burst', 'mage-battle', 'mage-artillery'].includes(cls)) { name = "Sorcerer's Shoes"; reason = 'build.bootsSorcerer'; }
+  else if (cls === 'enchanter' || cls === 'assassin-ad') { name = 'Ionian Boots of Lucidity'; reason = 'build.bootsLucidity'; }
+  else { name = t.ad >= t.ap ? 'Plated Steelcaps' : "Mercury's Treads"; reason = 'build.bootsDefault'; }
+  const boots = byName(name) || db.items.find((i) => i.category === 'boots');
+  return boots ? { id: boots.id, upgrade: boots.into[0] || null, reason } : null;
+}
+
+function recommendBuild(db, { championId, enemyId = null, enemyIds = [], role, enemyItems = null, enemyStats = null, ownedItems = null, gold = null, history = null }) {
+  const champ = db.byId[championId];
+  if (!champ) throw new Error(`Unknown champion ${championId}`);
+  const laner = enemyId ? db.byId[enemyId] : null;
+  const enemies = enemyIds.map((id) => db.byId[id]).filter(Boolean);
+  const cls = classOf(champ, role || champ.positions[0]);
+  const w = WEIGHTS[cls];
+  const weights = threatWeights(db, enemyStats, enemyItems);
+  const t = applyEnemyItems(db, analyzeThreats(laner, enemies, (e) => weights[e.id] || 1), enemyItems, weights);
+  const pool = db.items.filter((i) => i.category === 'legendary');
+  const owned = new Set<number>((ownedItems || []).filter((id) => db.itemById[id] && db.itemById[id].category === 'legendary'));
+
+  // The player's own results with this champion in similar matches nudge item values.
+  const lessons = itemLessons(history, { championId, enemyId, enemyIds });
+  const scored = pool.map((item) => {
+    const base = baseScore(item, w, champ);
+    const sit = situational(item, cls, t);
+    const lesson = lessons[item.id];
+    const learned = lesson && Math.abs(lesson.bonus) >= 0.1 ? [{ key: lesson.bonus > 0 ? 'build.historyWin' : 'build.historyLoss', params: { wins: lesson.wins, games: lesson.games } }] : [];
+    return {
+      item, base: base.score + coreBonus(item, cls) + (lesson ? lesson.bonus : 0), top: base.top, sit, learned,
+      sitScore: sit.reduce((s, r) => s + r.v, 0),
+    };
+  });
+
+  // Items already bought in game stay in the build (ranked first) and are never replaced.
+  // In a running match the situation weighs more, so the core adapts too (not only boots).
+  const coreSit = t.live ? 0.6 : 0.15;
+  const core = scored.filter((s) => owned.has(s.item.id)).slice(0, 3);
+  for (const s of [...scored].sort((a, b) => (b.base + b.sitScore * coreSit) - (a.base + a.sitScore * coreSit))) {
+    if (core.length >= 3) break;
+    if (!core.includes(s) && !conflicts(s.item, core.map((c) => c.item))) core.push(s);
+  }
+  // Buy order: owned items first, then % penetration and multiplier items last.
+  core.sort((a, b) => (Number(owned.has(b.item.id)) - Number(owned.has(a.item.id))) || (lateItem(a.item) - lateItem(b.item)));
+  const taken = core.map((c) => c.item);
+  for (const s of scored) if (owned.has(s.item.id) && !taken.includes(s.item)) taken.push(s.item);
+  const situ: any[] = [];
+  // Crit items only for marksmen (no Yun Tal on Garen).
+  for (const s of [...scored].filter((x) => x.sitScore > 0 && x.base > 0.6 && (cls === 'marksman' || !('crit' in x.item.features.stats))).sort((a, b) => (b.sitScore + b.base * 0.4) - (a.sitScore + a.base * 0.4))) {
+    if (situ.length >= 5) break;
+    if (!taken.includes(s.item) && !conflicts(s.item, [...taken, ...situ.map((x) => x.item)])) situ.push(s);
+  }
+  // In a running match the situation counts more: a fed burst enemy pulls Maw / Edge of Night in.
+  const sitWeight = t.live ? 0.6 : 0.3;
+  const fill = [...scored].sort((a, b) => (b.base + b.sitScore * sitWeight) - (a.base + a.sitScore * sitWeight))
+    .filter((s) => !taken.includes(s.item));
+  const full = [...taken];
+  for (const s of fill) {
+    if (full.length >= 5) break;
+    if (!conflicts(s.item, full)) full.push(s.item);
+  }
+
+  const threats: any[] = [];
+  if (!t.empty) {
+    threats.push({ key: 'threat.damageSplit', params: { ad: Math.round(t.ad * 100), ap: Math.round(t.ap * 100) } });
+    if (t.healing >= 0.3) threats.push({ key: 'threat.healing' });
+    if (t.tanks >= 0.35) threats.push({ key: 'threat.tanks' });
+    if (t.burstAD + t.burstAP >= 0.25) threats.push({ key: 'threat.burst' });
+    if (t.cc >= 1.6) threats.push({ key: 'threat.cc' });
+    if (t.autoAttack >= 0.4) threats.push({ key: 'threat.autoAttack' });
+    if (t.live) threats.push({ key: 'threat.fromItems' });
+    for (const [id, w] of Object.entries(weights)) if (w >= FED) threats.push({ key: 'threat.fed', params: { enemy: id } });
+  }
+
+  const build: any = {
+    championId, enemyId: enemyId || null, role: role || champ.positions[0], cls, threats,
+    starters: pickStarters(db, cls, role, laner),
+    boots: pickBoots(db, cls, t),
+    core: core.map((c) => ({ id: c.item.id, stats: c.top, owned: owned.has(c.item.id), reasons: [...c.sit.map((r) => ({ key: r.key })), ...c.learned] })),
+    situational: situ.map((s) => ({ id: s.item.id, reasons: [...s.sit.map((r) => ({ key: r.key })), ...s.learned] })),
+    full: full.slice(0, 5).map((i) => i.id),
+    ...recommendLoadout(db, { champ, cls, role: role || champ.positions[0], laner, threats: t }),
+  };
+  build.order = purchaseOrder(build);
+  if (ownedItems) build.next = nextPurchase(db, build, ownedItems, gold);
+  return build;
+}
+
+export { recommendBuild, classOf };
