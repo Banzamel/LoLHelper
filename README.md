@@ -162,7 +162,7 @@ shown in *Settings → About*). Changes are recorded in [CHANGELOG.md](CHANGELOG
    changelog entries into a dated section, commits and creates the `v<version>` tag.
 3. `git push --follow-tags` — GitHub Actions checks that the tag, `package.json` and the changelog agree,
    builds the installer signed for the updater (secrets `TAURI_SIGNING_PRIVATE_KEY` and
-   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) and publishes a GitHub Release with the setup, its `.sig`,
+   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) and publishes a GitHub Release with the setup,
    `latest.json` (Tauri updater) and `latest.yml` (lets Electron installs up to 0.12.x update into it); the
    release notes are the version's CHANGELOG section.
 

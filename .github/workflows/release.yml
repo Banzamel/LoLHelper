@@ -50,7 +50,6 @@ jobs:
         with:
           files: |
             release/LoLHelper-Setup-*.exe
-            release/LoLHelper-Setup-*.exe.sig
             release/latest.json
             release/latest.yml
           body_path: release-notes.md
