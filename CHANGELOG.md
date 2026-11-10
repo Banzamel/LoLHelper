@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-10
+
 ### Added
 - **Builds follow the champion, not only its class**: the database now knows what every champion's abilities scale
   with (AP and AD ratios, how much the kit works through attacks, on-hit effects and critical strikes). Where the
@@ -321,7 +323,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/Banzamel/LoLHelper/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/Banzamel/LoLHelper/compare/v0.13.1...v0.14.0
 [0.13.1]: https://github.com/Banzamel/LoLHelper/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/Banzamel/LoLHelper/compare/v0.12.0...v0.13.0
