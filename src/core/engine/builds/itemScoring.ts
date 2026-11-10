@@ -1,13 +1,13 @@
-// How much an item is worth to a build class: gold value of its stats under the class
+// How much an item is worth to an item style (a build class or a narrower style): gold value of its stats under the class
 // weights, a bonus for proven core items, and situational value against the enemy threats.
 import type { Champion, Item } from '../../data/types.ts';
-import type { BuildClass, Threats } from '../types.ts';
+import type { ItemStyle, Threats } from '../types.ts';
 import { effectScale } from './itemEffects.ts';
 
 const GOLD: Record<string, number> = { ad: 35, ap: 20, armor: 20, mr: 18, hp: 2.67, as: 25, crit: 40, haste: 26.7, lethality: 30, armorPen: 40,
   magicPen: 46, magicPenFlat: 31, lifesteal: 37.5, omnivamp: 40, mana: 1.4, manaRegen: 3, hpRegen: 3, hsp: 66, tenacity: 10, msPct: 39 };
 
-export const WEIGHTS: Record<BuildClass, Record<string, number>> = {
+export const WEIGHTS: Record<ItemStyle, Record<string, number>> = {
   marksman: { ad: 1, as: 1, crit: 1.2, lifesteal: 0.5, armorPen: 0.7, msPct: 0.3 },
   'mage-burst': { ap: 1.1, magicPen: 0.5, magicPenFlat: 1, haste: 0.8, mana: 0.6 },
   'mage-battle': { ap: 1, hp: 0.7, haste: 0.7, magicPen: 0.6, mana: 0.3, omnivamp: 0.3 },
@@ -18,11 +18,15 @@ export const WEIGHTS: Record<BuildClass, Record<string, number>> = {
   tank: { hp: 1, armor: 1, mr: 1, haste: 0.6 },
   enchanter: { hsp: 1.2, haste: 1, ap: 0.5, manaRegen: 1, mana: 0.3, hp: 0.2 },
   'support-tank': { hp: 0.9, armor: 0.8, mr: 0.8, haste: 0.8 },
+  onhit: { ad: 0.9, as: 1.1, lifesteal: 0.5, hp: 0.3, crit: 0.3, armorPen: 0.3, haste: 0.2 },
+  'crit-fighter': { ad: 1, as: 0.8, crit: 1.2, lifesteal: 0.5, armorPen: 0.5, hp: 0.25 },
+  'ap-attacker': { ap: 1, as: 0.9, haste: 0.4, magicPen: 0.5, magicPenFlat: 0.7, ad: 0.2 },
+  'caster-ad': { ad: 1.1, haste: 1, mana: 0.5, armorPen: 0.6, lethality: 0.4, hp: 0.3 },
 };
 
 // Proven core items per class, best first. Stat value alone misses what passives give
 // (Trinity Force's Spellblade, Sterak's Gage's lifeline), so these get a bonus.
-const CLASS_CORE: Partial<Record<BuildClass, string[]>> = {
+const CLASS_CORE: Partial<Record<ItemStyle, string[]>> = {
   bruiser: ['Trinity Force', 'Sundered Sky', 'Black Cleaver', "Sterak's Gage", "Death's Dance", 'Spear of Shojin', 'Eclipse', 'Hullbreaker', 'Titanic Hydra', 'Ravenous Hydra'],
   marksman: ['Infinity Edge', 'Kraken Slayer', 'Yun Tal Wildarrows', 'The Collector', 'Phantom Dancer', "Lord Dominik's Regards", 'Bloodthirster', "Runaan's Hurricane", 'Statikk Shiv', 'Navori Flickerblade'],
   'assassin-ad': ["Youmuu's Ghostblade", 'Profane Hydra', 'Voltaic Cyclosword', 'Edge of Night', "Serylda's Grudge", 'Axiom Arc', 'Hubris', 'The Collector', 'Eclipse'],
@@ -30,10 +34,14 @@ const CLASS_CORE: Partial<Record<BuildClass, string[]>> = {
   'mage-battle': ["Liandry's Torment", "Rylai's Crystal Scepter", 'Malignance', 'Cosmic Drive', "Rabadon's Deathcap", 'Void Staff', "Zhonya's Hourglass", 'Blackfire Torch'],
   'mage-artillery': ['Malignance', 'Blackfire Torch', 'Shadowflame', "Rabadon's Deathcap", 'Void Staff', "Liandry's Torment"],
   'ap-bruiser': ['Riftmaker', "Liandry's Torment", 'Hextech Rocketbelt', 'Cosmic Drive', "Nashor's Tooth", "Zhonya's Hourglass", "Rabadon's Deathcap"],
+  onhit: ['Blade of The Ruined King', "Guinsoo's Rageblade", 'Kraken Slayer', 'Terminus', "Wit's End", 'Immortal Shieldbow', "Death's Dance", 'Experimental Hexplate', "Runaan's Hurricane", 'Phantom Dancer'],
+  'crit-fighter': ['Infinity Edge', 'Blade of The Ruined King', 'Immortal Shieldbow', 'Kraken Slayer', "Death's Dance", 'Phantom Dancer', 'The Collector', "Lord Dominik's Regards", 'Bloodthirster', 'Trinity Force'],
+  'ap-attacker': ["Nashor's Tooth", "Guinsoo's Rageblade", "Rabadon's Deathcap", 'Shadowflame', "Zhonya's Hourglass", 'Void Staff', 'Lich Bane', 'Terminus'],
+  'caster-ad': ['Trinity Force', 'Manamune', 'Spear of Shojin', "Serylda's Grudge", 'Bloodthirster', 'Essence Reaver', 'Black Cleaver'],
   tank: ['Heartsteel', 'Sunfire Aegis', "Jak'Sho, The Protean", 'Hollow Radiance', 'Unending Despair', "Randuin's Omen", 'Kaenic Rookern', 'Force of Nature', "Warmog's Armor", "Dead Man's Plate"],
 };
 
-export function coreBonus(item: Item, cls: BuildClass): number {
+export function coreBonus(item: Item, cls: ItemStyle): number {
   const list = CLASS_CORE[cls];
   const i = list ? list.indexOf(item.nameEn) : -1;
   return i < 0 ? 0 : 1.6 - i * 0.08;
@@ -58,7 +66,7 @@ export interface SituationalReason { v: number; key: string; params?: Record<str
 // How far `x` is over `from`, in steps, up to 3; a sliver over is not a reason yet.
 const over = (x: number, from: number, step: number) => { const v = Math.min(3, (x - from) / step); return v >= 0.25 ? v : 0; };
 
-export function situational(item: Item, cls: BuildClass, t: Threats): SituationalReason[] {
+export function situational(item: Item, cls: ItemStyle, t: Threats): SituationalReason[] {
   const f = item.features.flags;
   const s = item.features.stats;
   const reasons: SituationalReason[] = [];

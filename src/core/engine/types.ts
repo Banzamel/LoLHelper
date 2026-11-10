@@ -5,6 +5,10 @@ import type { TextKey } from '../shared/json.ts';
 export type BuildClass = 'marksman' | 'mage-burst' | 'mage-battle' | 'mage-artillery' | 'assassin-ad' | 'bruiser'
   | 'ap-bruiser' | 'tank' | 'enchanter' | 'support-tank';
 
+// What a champion buys: its class, or a narrower style read from its kit (builds/itemStyle.ts):
+// attack speed and on-hit, crit on a melee fighter, an attacking mage, an AD caster.
+export type ItemStyle = BuildClass | 'onhit' | 'crit-fighter' | 'ap-attacker' | 'caster-ad';
+
 // Share (0–1) of the enemy team with each kind of threat, weighted by how fed each enemy is.
 export interface Threats {
   ad: number;
@@ -84,6 +88,8 @@ export interface Build extends Loadout {
   enemyId: string | null;
   role: Role;
   cls: BuildClass;
+  // The style the items were picked for (the class unless the kit says otherwise).
+  style: ItemStyle;
   threats: TextKey[];
   starters: { id: number; count: number }[];
   boots: { id: number; upgrade: number | null; reason: string } | null;

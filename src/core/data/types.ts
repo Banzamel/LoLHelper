@@ -24,6 +24,20 @@ export interface ChampionSpell {
   labels: string[];
 }
 
+// Counts of the abilities (passive included) and summed damage ratios: data/championScaling.ts.
+export interface ChampionScaling {
+  // Damage ratios in % of AP / AD, summed over the abilities at maximum rank.
+  ap: number;
+  ad: number;
+  // Abilities that work through basic attacks, apply on-hit effects, grant attack speed.
+  attack: number;
+  onHit: number;
+  attackSpeed: number;
+  // Abilities whose text mentions critical strikes, and critical strike chance itself.
+  crit: number;
+  critChance: number;
+}
+
 export interface Champion {
   id: string;
   key: number;
@@ -41,6 +55,8 @@ export interface Champion {
   spells: ChampionSpell[];
   // Ability trait counts (data/parse: hardCC, dash, heal…) plus range figures.
   traits: Record<string, number>;
+  // Missing for champions Meraki does not list.
+  scaling?: ChampionScaling;
   icon: string;
 }
 

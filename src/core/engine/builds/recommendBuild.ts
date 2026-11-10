@@ -10,9 +10,10 @@ import { itemLessons } from '../history/learning.ts';
 import { applyEnemyItems, threatWeights } from '../live/enemyItems.ts';
 import { enemyDefence } from '../live/enemyProfile.ts';
 import { nextPurchase, purchaseOrder } from '../live/purchases.ts';
-import type { Build, BuildClass, BuildRequest, Threats } from '../types.ts';
+import type { Build, BuildRequest, ItemStyle, Threats } from '../types.ts';
 import { classOf } from './classOf.ts';
 import { effectScore } from './itemEffects.ts';
+import { itemStyle } from './itemStyle.ts';
 import { baseScore, conflicts, coreBonus, lateItem, situational, WEIGHTS, type SituationalReason } from './itemScoring.ts';
 import { pickBoots, pickStarters } from './starters.ts';
 import { synergy, synergyScore } from './synergy.ts';
@@ -27,7 +28,7 @@ interface Scored {
   sitScore: number;
 }
 
-function scoreItems(db: Db, champ: Champion, cls: BuildClass, t: Threats, req: BuildRequest): Scored[] {
+function scoreItems(db: Db, champ: Champion, cls: ItemStyle, t: Threats, req: BuildRequest): Scored[] {
   const lessons = itemLessons(req.history || null, { championId: req.championId, enemyId: req.enemyId || null, enemyIds: req.enemyIds || [] });
   return db.items.filter((i) => i.category === 'legendary').map((item) => {
     const base = baseScore(item, WEIGHTS[cls], champ);
@@ -38,14 +39,16 @@ function scoreItems(db: Db, champ: Champion, cls: BuildClass, t: Threats, req: B
       ? [{ key: lesson.bonus > 0 ? 'build.historyWin' : 'build.historyLoss', params: { wins: lesson.wins, games: lesson.games } }] : [];
     // Heal and shield power and mana regeneration mark an enchanter's item: its effects serve allies.
     const forAllies = cls !== 'enchanter' && (item.features.stats.hsp || item.features.stats.manaRegen) ? 1.5 : 0;
-    const own = base.score + effectScore(item, cls).score + coreBonus(item, cls) + (lesson ? lesson.bonus : 0) - forAllies;
+    // Crit chance is paid for and unused by a style that does not build crit.
+    const wasted = (WEIGHTS[cls].crit || 0) < 0.5 && 'crit' in item.features.stats ? 1 : 0;
+    const own = base.score + effectScore(item, cls).score + coreBonus(item, cls) + (lesson ? lesson.bonus : 0) - forAllies - wasted;
     return { item, base: own, top: base.top, sit, learned, sitScore: sit.reduce((s, r) => s + r.v, 0) };
   });
 }
 
 // Adds items to `chosen` up to `size`: each time the one worth the most next to what is
 // already there, never one whose passive is already in the build.
-function grow(scored: Scored[], chosen: Item[], size: number, sitWeight: number, cls: BuildClass): Item[] {
+function grow(scored: Scored[], chosen: Item[], size: number, sitWeight: number, cls: ItemStyle): Item[] {
   const out = [...chosen];
   while (out.length < size) {
     let best: Scored | null = null;
@@ -61,10 +64,10 @@ function grow(scored: Scored[], chosen: Item[], size: number, sitWeight: number,
   return out;
 }
 
-// Crit items only for marksmen (no Yun Tal on Garen).
-function pickSituational(scored: Scored[], taken: Item[], cls: BuildClass): Scored[] {
+// Crit items only for the styles that build crit (no Yun Tal on Garen).
+function pickSituational(scored: Scored[], taken: Item[], cls: ItemStyle): Scored[] {
   const situ: Scored[] = [];
-  const candidates = scored.filter((x) => x.sitScore > 0 && x.base > 0.6 && (cls === 'marksman' || !('crit' in x.item.features.stats)));
+  const candidates = scored.filter((x) => x.sitScore > 0 && x.base > 0.6 && ((WEIGHTS[cls].crit || 0) >= 0.5 || !('crit' in x.item.features.stats)));
   for (const s of [...candidates].sort((a, b) => (b.sitScore + b.base * 0.4) - (a.sitScore + a.base * 0.4))) {
     if (situ.length >= 5) break;
     if (!taken.includes(s.item) && !conflicts(s.item, [...taken, ...situ.map((x) => x.item)])) situ.push(s);
@@ -91,29 +94,31 @@ export function recommendBuild(db: Db, req: BuildRequest): Build {
   const t = threatsOf(db, req, laner, weights);
   const owned = new Set((req.ownedItems || []).filter((id) => db.itemById[id] && db.itemById[id].category === 'legendary'));
 
-  const scored = scoreItems(db, champ, cls, t, req);
+  // Items follow the champion's own style where its kit differs from the class.
+  const style = itemStyle(champ, cls);
+  const scored = scoreItems(db, champ, style, t, req);
   const byItem = new Map(scored.map((s) => [s.item, s]));
   // Items already bought in game stay in the build (first) and are never replaced. In a
   // running match the situation weighs more, so the core adapts too (not only boots).
   const have = scored.filter((s) => owned.has(s.item.id)).map((s) => s.item);
-  const start = grow(scored, have, 3, t.live ? 0.6 : 0.15, cls);
+  const start = grow(scored, have, 3, t.live ? 0.6 : 0.15, style);
   // Buy order of the core: owned items first, then % penetration and multiplier items last.
   const core = start.slice(0, 3).sort((a, b) => (Number(owned.has(b.id)) - Number(owned.has(a.id))) || (lateItem(a) - lateItem(b)));
   const taken = [...core, ...start.slice(3)];
-  const situ = pickSituational(scored, taken, cls);
+  const situ = pickSituational(scored, taken, style);
   // In a running match the situation counts more: a fed burst enemy pulls Maw / Edge of Night in.
-  const full = grow(scored, taken, 5, t.live ? 0.6 : 0.3, cls).slice(0, 5);
+  const full = grow(scored, taken, 5, t.live ? 0.6 : 0.3, style).slice(0, 5);
   // Why an item: the enemy situation, the player's history, and what it does with the rest.
   const reasonsOf = (item: Item): TextKey[] => {
     const s = byItem.get(item);
-    const own = s ? [...s.sit, ...synergy(item, full.filter((x) => x !== item), cls)].filter((r) => r.v > 0).sort((a, b) => b.v - a.v) : [];
+    const own = s ? [...s.sit, ...synergy(item, full.filter((x) => x !== item), style)].filter((r) => r.v > 0).sort((a, b) => b.v - a.v) : [];
     return [...own.map((r) => ({ key: r.key, ...(r.params ? { params: r.params } : {}) })), ...(s ? s.learned : [])];
   };
 
   const build: Build = {
-    championId: champ.id, enemyId, role, cls, threats: threatLines(t, weights),
+    championId: champ.id, enemyId, role, cls, style, threats: threatLines(t, weights),
     starters: pickStarters(db, cls, role, laner),
-    boots: pickBoots(db, cls, t),
+    boots: pickBoots(db, cls, t, (WEIGHTS[style].as || 0) >= 0.8),
     core: core.map((item) => ({ id: item.id, stats: byItem.get(item)?.top || [], owned: owned.has(item.id), reasons: reasonsOf(item) })),
     situational: situ.map((s) => ({ id: s.item.id, reasons: reasonsOf(s.item) })),
     full: full.map((i) => i.id),

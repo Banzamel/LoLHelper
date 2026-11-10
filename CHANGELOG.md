@@ -7,6 +7,21 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Added
+- **Builds follow the champion, not only its class**: the database now knows what every champion's abilities scale
+  with (AP and AD ratios, how much the kit works through attacks, on-hit effects and critical strikes). Where the
+  kit differs from the class, the items follow the kit: Master Yi, Bel'Veth, Vayne, Kog'Maw, Kalista and Varus build
+  attack speed and on-hit, Yasuo, Yone, Tryndamere, Nilah and Gangplank build crit, Kai'Sa and Teemo build AP with
+  attack speed, Ezreal builds as an AD caster (Manamune), Akali builds AP.
+- Guinsoo's Rageblade and Runaan's Hurricane are valued for applying on-hit effects again, Manamune and
+  Archangel's Staff for the damage their mana gives.
+
+### Fixed
+- Crit items were suggested to champions who do not build crit.
+
+### Changed
+- The database format changed again (champion scalings): update the database in Settings after installing.
+
 ## [0.14.0] - 2026-11-10
 
 ### Added

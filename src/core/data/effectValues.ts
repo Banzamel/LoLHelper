@@ -80,5 +80,7 @@ export function refineFlags(flags: Record<string, boolean>, effects: ItemEffectT
   // Healing in a fight; not regeneration out of combat (Warmog's Armor) or a revive.
   set('healSelf', (!!flags.healSelf || /heals? you(rself)?\b|omnivamp/i.test(text)) && !/has not been taken|resurrection/i.test(text));
   set('execute', /execute them/i.test(text));
+  set('onHitAmp', /appl(y|ies) on-hit effects/i.test(text));
+  set('manaScaling', /(attack damage|ability power) equal to [\d.]+% (maximum|bonus) mana/i.test(text));
   return out;
 }

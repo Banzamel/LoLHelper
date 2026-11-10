@@ -1,6 +1,7 @@
 // Data Dragon champions (championFull.json) plus Meraki positions, archetypes and ratings, as
 // the app's language-independent champion records and their translated texts.
 import type { RawJson } from '../../shared/json.ts';
+import { championScaling } from '../championScaling.ts';
 import { extractChampionTraits, plain } from '../parse.ts';
 import type { Champion, ChampionTexts, Role } from '../types.ts';
 
@@ -49,6 +50,7 @@ export function buildChampion(en: RawJson, meraki: RawJson, rates: RawJson): Cha
       labels: ((s.leveltip && s.leveltip.label) || []).map((l: string) => l.replace(/@[^@]+@\s*/g, '').trim()),
     })),
     traits: extractChampionTraits(en),
+    ...(championScaling(meraki) ? { scaling: championScaling(meraki) } : {}),
     icon: `img/champion/${en.id}.png`,
   };
 }

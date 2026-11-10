@@ -3,7 +3,7 @@
 import type { Db, DbMeta, RawDatabase } from './types.ts';
 
 // Bump when the database layout changes; older databases are then ignored (re-download needed).
-export const SCHEMA = 4;
+export const SCHEMA = 5;
 
 // Reads one file of a database folder as text (null when missing).
 export type DataReader = (file: string) => Promise<string | null>;

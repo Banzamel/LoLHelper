@@ -23,17 +23,18 @@ export function pickStarters(db: Db, cls: BuildClass, role: string | null, laner
   return out;
 }
 
-function bootsChoice(cls: BuildClass, t: Threats): [string, string] {
-  if (t.cc >= 2 || (t.ap >= 0.6 && cls !== 'marksman')) return ["Mercury's Treads", 'build.bootsMercury'];
+// attacker: the champion's item style lives off attack speed, whatever its class.
+function bootsChoice(cls: BuildClass, t: Threats, attacker: boolean): [string, string] {
+  if (t.cc >= 2 || (t.ap >= 0.6 && cls !== 'marksman' && !attacker)) return ["Mercury's Treads", 'build.bootsMercury'];
   if (t.ad >= 0.6 && (t.autoAttack >= 0.4 || t.burstAD >= 0.2)) return ['Plated Steelcaps', 'build.bootsSteelcaps'];
-  if (cls === 'marksman') return ["Berserker's Greaves", 'build.bootsBerserker'];
+  if (cls === 'marksman' || attacker) return ["Berserker's Greaves", 'build.bootsBerserker'];
   if (['mage-burst', 'mage-battle', 'mage-artillery'].includes(cls)) return ["Sorcerer's Shoes", 'build.bootsSorcerer'];
   if (cls === 'enchanter' || cls === 'assassin-ad') return ['Ionian Boots of Lucidity', 'build.bootsLucidity'];
   return [t.ad >= t.ap ? 'Plated Steelcaps' : "Mercury's Treads", 'build.bootsDefault'];
 }
 
-export function pickBoots(db: Db, cls: BuildClass, t: Threats): Build['boots'] {
-  const [name, reason] = bootsChoice(cls, t);
+export function pickBoots(db: Db, cls: BuildClass, t: Threats, attacker = false): Build['boots'] {
+  const [name, reason] = bootsChoice(cls, t, attacker);
   const boots = db.items.find((i) => i.nameEn === name && i.category === 'boots') || db.items.find((i) => i.category === 'boots');
   return boots ? { id: boots.id, upgrade: boots.into[0] || null, reason } : null;
 }
