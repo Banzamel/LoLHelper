@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-10
+
 ### Added
 - **Builds are picked as a set**: every next item is the best one next to what you already bought or chose — crit
   chance with crit damage, attack speed with on-hit damage, percentage penetration and Rabadon's Deathcap with the
@@ -304,7 +306,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.13.1...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/Banzamel/LoLHelper/compare/v0.13.1...v0.14.0
 [0.13.1]: https://github.com/Banzamel/LoLHelper/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/Banzamel/LoLHelper/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/Banzamel/LoLHelper/compare/v0.11.0...v0.12.0
