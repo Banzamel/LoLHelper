@@ -7,7 +7,7 @@ import type { LiveGame, PlayingGame } from '../../../core/live/types.ts';
 import { useService } from '../../../shared/hooks/services.tsx';
 import { BuildService } from '../../builds/index.ts';
 import { useGameData } from '../../database/index.ts';
-import { buildForGame, isPlaying, type GameBuild } from '../gameModel.ts';
+import { buildForGame, buildInputs, isPlaying, type GameBuild } from '../gameModel.ts';
 
 export type LiveData = GameBuild & { guide: RuneGuide };
 
@@ -17,7 +17,7 @@ function viewKey(g: PlayingGame, charts: boolean) {
     g.objectives, (g.timeline || []).length, Math.floor(g.gameTime / (charts ? 20 : 1))]);
 }
 
-const buildKey = (g: PlayingGame) => JSON.stringify([g.me.items, g.me.level, Math.floor(g.me.gold / 100), g.enemies.map((e) => [e.items, e.scores, e.position])]);
+const buildKey = (g: PlayingGame) => JSON.stringify([g.me.items, g.me.level, Math.floor(g.me.gold / 100), buildInputs(g)]);
 
 export function useLiveMatch(game: LiveGame | null, charts: boolean): { game: PlayingGame; data: LiveData } | null {
   const builds = useService(BuildService);

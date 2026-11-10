@@ -73,22 +73,33 @@ function parseStats(desc: string): Record<string, number> {
   return stats;
 }
 
+// The item texts carry no numbers for most effects, so a rule only says which kind of effect an
+// item has; what the kind is worth is the engine's knowledge (engine/builds/itemEffects.ts).
 const ITEM_RULES = {
   grievous: /Grievous Wounds|Wounds<\/keyword>|% Wounds/i,
   stasis: /Stasis/i,
   lifeline: /Lifeline/i,
   revive: /Rebirth|revive|resurrect/i,
   spellshield: /Spell ?Shield|Annul/i,
-  cleanse: /Remove all crowd control|Quicksilver|cleanse/i,
+  // "cleanse" alone also names Death's Dance removing its own stored damage.
+  cleanse: /Remov\w* all crowd control|Quicksilver|remov\w* .{0,40}(crowd control|debuffs)/i,
   antiAttackSpeed: /Attack Speed of|reduc\w* .{0,40}Attack Speed|Winter's Caress|Rock Solid/i,
-  antiCrit: /critical strike/i,
+  // Not every text about critical strikes: only taking less damage from them.
+  antiCrit: /less damage from Critical Strikes|reduc\w* .{0,40}Critical Strike/i,
   thorns: /Thorns|reflect/i,
   antiShield: /Shield Reaver|reduc\w* .{0,20}shield/i,
-  maxHpDamage: /(maximum|max|current) Health (as )?(bonus )?(physical |magic )?damage|of the target's (maximum|current) Health/i,
+  maxHpDamage: /(maximum|max|current|bonus) Health (as )?(bonus )?(physical |magic )?damage|of (the target's|enemy's|their) (maximum|max|current) Health|based on their bonus Health/i,
   blockAttacks: /damage taken from Attacks|reduce\w* .{0,30}damage from (basic )?Attacks/i,
-  shieldSelf: /gain .{0,40}shield|shield/i,
+  // The <shield> tag marks a shield the owner gains (Serpent's Fang only names enemy shields).
+  shieldSelf: /<shield>/i,
   slowOnHit: /Slow/i,
   armorShred: /reduc\w* .{0,30}(Armor|Magic Resist)/i,
+  onHitDamage: /damage[^.]{0,80}On-Hit/i,
+  burn: /\bburn|damage<\/\w+> per second/i,
+  spellblade: /<passive>Spellblade<\/passive>/i,
+  apMultiplier: /Ability Power by \d+%/i,
+  healSelf: /<healing>/i,
+  damageAmp: /\d+% (bonus|increased) damage/i,
 };
 
 export function extractItemFeatures(en: RawJson): ItemFeatures {

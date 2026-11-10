@@ -31,3 +31,19 @@ test('penetration goes late and items sharing a passive do not stack', () => {
   const grievous = db.items.filter((i) => i.category === 'legendary' && i.features.flags.grievous);
   assert.ok(grievous.length >= 2 && conflicts(grievous[0], [grievous[1]]));
 });
+
+test('in a match the enemies\' real stats, penetration and anti-heal decide', () => {
+  const keys = (name: string, cls: Parameters<typeof situational>[1], t: Threats) => situational(item(name), cls, t).filter((r) => r.v > 0).map((r) => r.key);
+  const armored = { ...calm, tanks: 0.6, defence: { armor: 150, mr: 50, hp: 2000 } };
+  assert.deepStrictEqual(keys("Lord Dominik's Regards", 'marksman', armored), ['build.penVsArmor']);
+  assert.deepStrictEqual(keys('Void Staff', 'mage-burst', armored), []);
+  assert.deepStrictEqual(keys('Void Staff', 'mage-burst', { ...armored, defence: { armor: 60, mr: 100, hp: 2000 } }), ['build.penVsMr']);
+  // Without live stats the tank share decides, as in champion select.
+  assert.deepStrictEqual(keys('Void Staff', 'mage-burst', { ...calm, tanks: 0.6 }), ['build.penVsTanks']);
+  const value = (name: string, t: Threats) => situational(item(name), 'bruiser', t).reduce((s, r) => s + r.v, 0);
+  const ad = { ...calm, ad: 0.8 };
+  assert.ok(value("Randuin's Omen", { ...ad, pen: { armor: 1, magic: 0 } }) < value("Randuin's Omen", ad));
+  assert.ok(value('Bloodthirster', { ...calm, antiHeal: 0.6 }) < 0);
+  const healing = { ...calm, healing: 0.6 };
+  assert.ok(value('Thornmail', { ...healing, allyGrievous: true }) < value('Thornmail', healing));
+});

@@ -1,10 +1,10 @@
-// In-game widget: on/off, opacity, hotkeys and a preview to position it before a match.
+// In-game widget: on/off, opacity, size, hotkeys and a preview to position it before a match.
 import { useState } from 'react';
 import type { OverlaySettings } from '../../../core/settings/defaults.ts';
 import { useService, useStore } from '../../../shared/hooks/services.tsx';
 import { useT } from '../../../shared/i18n/useT.ts';
 import { ToastController } from '../../../shared/ui/overlays/ToastController.ts';
-import { OverlayService } from '../../widget/index.ts';
+import { OverlayService, SCALE_MAX, SCALE_MIN } from '../../widget/index.ts';
 import { useSaveSettings } from '../hooks/useSaveSettings.ts';
 import { SettingsService } from '../SettingsService.ts';
 import { SettingRow } from './SettingRow.tsx';
@@ -18,6 +18,7 @@ export function OverlaySection() {
   const save = useSaveSettings();
   const o = settings.overlay;
   const [opacity, setOpacity] = useState(Math.round(o.opacity * 100));
+  const [size, setSize] = useState(Math.round(o.scale * 100));
   const saveOverlay = async (patch: Partial<OverlaySettings>) => {
     save({ overlay: { ...o, ...patch } });
     const failed = await overlay.applySettings();
@@ -39,6 +40,13 @@ export function OverlaySection() {
             onChange={(e) => setOpacity(Number(e.target.value))} onPointerUp={() => { void saveOverlay({ opacity: opacity / 100 }); }}
             onKeyUp={() => { void saveOverlay({ opacity: opacity / 100 }); }} />
           <span className="gold-text">{`${opacity}%`}</span>
+        </div>
+      </SettingRow>
+      <SettingRow label={t('overlay.size')}>
+        <div className="opacity-row">
+          <input type="range" min={SCALE_MIN * 100} max={SCALE_MAX * 100} step={5} value={size} className="level-slider opacity-slider"
+            onChange={(e) => setSize(Number(e.target.value))} onPointerUp={() => overlay.setScale(size / 100)} onKeyUp={() => overlay.setScale(size / 100)} />
+          <span className="gold-text">{`${size}%`}</span>
         </div>
       </SettingRow>
       <SettingRow label={t('overlay.toggleKey')} hint={t('overlay.keyHint')}>{key('toggleKey')}</SettingRow>

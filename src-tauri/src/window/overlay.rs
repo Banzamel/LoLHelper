@@ -1,6 +1,7 @@
-//! The in-game widget window: small, transparent, always on top, never in the taskbar. While
-//! a match runs it lets every click through to the game and never takes focus; in move mode
-//! it can be dragged. When to show it is decided by the frontend (OverlayService).
+//! The in-game widget window: small, transparent, always on top, never in the taskbar. It never
+//! takes focus, so the game keeps the keyboard. While a match runs it lets every click through
+//! to the game; in move mode it takes the mouse: the tracker thread drags it and its own
+//! controls (the size slider) work. When to show it is decided by the frontend (OverlayService).
 
 use std::sync::Mutex;
 
@@ -13,12 +14,25 @@ use crate::window::win32;
 pub const LABEL: &str = "overlay";
 const WIDTH: f64 = 340.0;
 const HEIGHT: f64 = 250.0;
+const SCALE: std::ops::RangeInclusive<f64> = 0.6..=1.4;
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 pub struct OverlayState {
     pub visible: bool,
     /// Move mode: the widget takes the mouse and can be dragged.
     pub interactive: bool,
+    /// The size chosen by the player: the page zoom, and the window grows with it.
+    pub scale: f64,
+    /// Unscaled height of the widget's content.
+    height: f64,
+    /// Unscaled height, from the top, of the part that drags the widget in move mode.
+    pub drag_height: f64,
+}
+
+impl Default for OverlayState {
+    fn default() -> Self {
+        Self { visible: false, interactive: false, scale: 1.0, height: HEIGHT, drag_height: HEIGHT }
+    }
 }
 
 #[derive(Default)]
@@ -37,13 +51,23 @@ impl Overlay {
         self.state.lock().map(|s| *s).unwrap_or_default()
     }
 
+    fn update(&self, change: impl FnOnce(&mut OverlayState)) -> OverlayState {
+        match self.state.lock() {
+            Ok(mut state) => {
+                change(&mut state);
+                *state
+            }
+            Err(_) => OverlayState::default(),
+        }
+    }
+
     pub fn apply(&self, app: &AppHandle, visible: bool, interactive: bool) -> Result<()> {
         let window = window(app)?;
-        if let Ok(mut state) = self.state.lock() {
-            *state = OverlayState { visible, interactive };
-        }
+        self.update(|s| {
+            s.visible = visible;
+            s.interactive = interactive;
+        });
         window.set_ignore_cursor_events(!interactive)?;
-        window.set_focusable(interactive)?;
         if visible {
             win32::show_without_focus(&window);
             win32::keep_on_top(&window);
@@ -52,6 +76,26 @@ impl Overlay {
         }
         Ok(())
     }
+
+    pub fn resize(&self, app: &AppHandle, height: f64, drag_height: f64) -> Result<()> {
+        let state = self.update(|s| {
+            s.height = height.clamp(60.0, 460.0);
+            s.drag_height = drag_height.max(0.0);
+        });
+        fit(app, state)
+    }
+
+    pub fn set_scale(&self, app: &AppHandle, scale: f64) -> Result<()> {
+        let state = self.update(|s| s.scale = scale.clamp(*SCALE.start(), *SCALE.end()));
+        window(app)?.set_zoom(state.scale)?;
+        fit(app, state)
+    }
+}
+
+/// The window is exactly as big as the zoomed widget.
+fn fit(app: &AppHandle, state: OverlayState) -> Result<()> {
+    window(app)?.set_size(LogicalSize::new((WIDTH * state.scale).round(), (state.height * state.scale).round()))?;
+    Ok(())
 }
 
 pub fn window(app: &AppHandle) -> Result<WebviewWindow> {
@@ -102,11 +146,6 @@ fn window_scale(app: &AppHandle) -> f64 {
 
 pub fn place(app: &AppHandle, x: f64, y: f64) -> Result<()> {
     window(app)?.set_position(LogicalPosition::new(x, y))?;
-    Ok(())
-}
-
-pub fn resize(app: &AppHandle, height: f64) -> Result<()> {
-    window(app)?.set_size(LogicalSize::new(WIDTH, height.clamp(60.0, 420.0).round()))?;
     Ok(())
 }
 

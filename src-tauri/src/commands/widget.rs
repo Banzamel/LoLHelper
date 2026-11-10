@@ -16,8 +16,13 @@ pub fn overlay_place(app: AppHandle, x: f64, y: f64) -> Result<()> {
 }
 
 #[tauri::command]
-pub fn overlay_resize(app: AppHandle, height: f64) -> Result<()> {
-    overlay::resize(&app, height)
+pub fn overlay_resize(app: AppHandle, overlay: State<'_, Overlay>, height: f64, drag_height: f64) -> Result<()> {
+    overlay.resize(&app, height, drag_height)
+}
+
+#[tauri::command]
+pub fn overlay_scale(app: AppHandle, overlay: State<'_, Overlay>, scale: f64) -> Result<()> {
+    overlay.set_scale(&app, scale)
 }
 
 #[tauri::command]

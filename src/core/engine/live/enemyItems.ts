@@ -1,8 +1,9 @@
 // In-game adjustments: what the enemies actually bought changes the threat picture (damage
 // split by gold spent, defensive stacking, healing items), and how fed each enemy is decides
-// how much their damage counts.
+// how much their damage counts. The passives of their items count too (enemyProfile.ts).
 import type { Db, Item } from '../../data/types.ts';
 import type { BuildRequest, Threats } from '../types.ts';
+import { enemyEffects } from './enemyProfile.ts';
 
 const DMG_AD = ['ad', 'lethality', 'armorPen', 'crit', 'as'];
 const DMG_AP = ['ap', 'magicPen', 'magicPenFlat'];
@@ -26,7 +27,6 @@ export function applyEnemyItems(db: Db, t: Threats, enemyItems: BuildRequest['en
   let ad = 0;
   let ap = 0;
   let tanky = 0;
-  let healers = 0;
   for (const { items, w } of entries) {
     const sum = (keys: string[]) => items.reduce((s, it) => s + goldIn(it.features.stats, keys), 0);
     const a = sum(DMG_AD);
@@ -35,16 +35,19 @@ export function applyEnemyItems(db: Db, t: Threats, enemyItems: BuildRequest['en
     ad += a * w;
     ap += p * w;
     if (d > 2000 && d > (a + p)) tanky += 1;
-    if (items.some((it) => it.features.stats.lifesteal || it.features.stats.omnivamp || it.features.stats.hsp)) healers += 1;
   }
   const n = entries.length;
+  const effects = enemyEffects(db, enemyItems, weights);
   const out = { ...t };
   if (ad + ap > 0) {
     out.ad = 0.5 * t.ad + 0.5 * (ad / (ad + ap));
     out.ap = 0.5 * t.ap + 0.5 * (ap / (ad + ap));
   }
   out.tanks = Math.max(t.tanks, tanky / n);
-  out.healing = Math.max(t.healing, healers / n);
+  out.healing = Math.max(t.healing, effects.healers);
+  out.shields = Math.max(t.shields, effects.shields);
+  out.antiHeal = effects.antiHeal;
+  out.pen = effects.pen;
   out.live = true;
   return out;
 }

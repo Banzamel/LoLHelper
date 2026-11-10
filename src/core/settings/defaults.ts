@@ -7,6 +7,8 @@ export const PROFILE_KEYS = ['pool', 'counterOverrides', 'flashOnD'] as const;
 export interface OverlaySettings {
   enabled: boolean;
   opacity: number;
+  // Size of the widget, 1 = 100%.
+  scale: number;
   // Logical (DPI-independent) position of the widget, null: default place.
   bounds: { x: number; y: number } | null;
   toggleKey: string;
@@ -42,6 +44,7 @@ export const DEFAULTS: SettingsData = {
   overlay: {
     enabled: true,
     opacity: 0.92,
+    scale: 1,
     bounds: null,
     toggleKey: 'CommandOrControl+Shift+H',
     moveKey: 'CommandOrControl+Shift+J',

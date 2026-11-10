@@ -22,3 +22,7 @@ export interface WidgetUpdate {
 
 export const WIDGET_UPDATE = 'widget:update';
 export const WIDGET_READY = 'widget:ready';
+// From the widget's size slider (move mode) to the main window, which owns the settings.
+export const WIDGET_SCALE = 'widget:scale';
+export const SCALE_MIN = 0.6;
+export const SCALE_MAX = 1.4;

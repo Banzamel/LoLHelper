@@ -7,7 +7,7 @@ import type { BuildService } from '../builds/index.ts';
 import type { DatabaseService } from '../database/index.ts';
 import { buildForGame, isPlaying, type GameBuild, type LiveGameService } from '../liveGame/index.ts';
 import type { SettingsService } from '../settings/index.ts';
-import { WIDGET_READY, WIDGET_UPDATE, type WidgetState, type WidgetUpdate } from './types.ts';
+import { SCALE_MAX, SCALE_MIN, WIDGET_READY, WIDGET_SCALE, WIDGET_UPDATE, type WidgetState, type WidgetUpdate } from './types.ts';
 import { widgetKey } from './widgetKey.ts';
 
 const SAVE_DELAY_MS = 400;
@@ -26,12 +26,15 @@ export class OverlayService {
   ) {}
 
   async init() {
-    const { bounds } = this.settings.value.overlay;
+    const { bounds, scale } = this.settings.value.overlay;
+    await widgetWindow.scale(scale);
     if (bounds) await widgetWindow.place(bounds.x, bounds.y);
     await this.registerShortcuts();
     this.live.store.subscribe(() => { void this.onGame(); });
     void nativeEvents.overlayMoved((pos) => this.rememberBounds(pos));
-    void windowMessages.listen(WIDGET_READY, () => { void this.push(); });
+    // A reloaded widget page starts at 100% again.
+    void windowMessages.listen(WIDGET_READY, () => { void widgetWindow.scale(this.settings.value.overlay.scale); void this.push(); });
+    void windowMessages.listen<number>(WIDGET_SCALE, (scale) => this.setScale(scale));
     this.update();
   }
 
@@ -101,6 +104,13 @@ export class OverlayService {
   setPreview(on: boolean) {
     this.store.set({ preview: on, moveMode: on });
     this.update();
+  }
+
+  setScale(value: number) {
+    const scale = Math.min(SCALE_MAX, Math.max(SCALE_MIN, Number(value) || 1));
+    this.settings.set({ overlay: { ...this.settings.value.overlay, scale } });
+    void widgetWindow.scale(scale);
+    void this.push();
   }
 
   // After a settings change: hotkeys again, visibility and a fresh widget (language).

@@ -1,15 +1,21 @@
 // Item build recommendation. Items are scored from their parsed stats against the
-// champion's class weights, then adjusted for the enemy laner and enemy team threats
-// (damage type, healing, tanks, burst, crowd control, auto-attackers, shields).
+// champion's class weights and from what their passives do, adjusted for the enemy laner and
+// enemy team threats (damage type, healing, tanks, burst, crowd control, auto-attackers,
+// shields; in a match the enemies' real stats and items). The build is then picked item by
+// item: each pick is the best next to the items already bought or chosen (synergy.ts).
 import type { Champion, Db, Item } from '../../data/types.ts';
+import type { TextKey } from '../../shared/json.ts';
 import { recommendLoadout } from '../loadout/recommendLoadout.ts';
 import { itemLessons } from '../history/learning.ts';
 import { applyEnemyItems, threatWeights } from '../live/enemyItems.ts';
+import { enemyDefence } from '../live/enemyProfile.ts';
 import { nextPurchase, purchaseOrder } from '../live/purchases.ts';
 import type { Build, BuildClass, BuildRequest, Threats } from '../types.ts';
 import { classOf } from './classOf.ts';
+import { effectScore } from './itemEffects.ts';
 import { baseScore, conflicts, coreBonus, lateItem, situational, WEIGHTS, type SituationalReason } from './itemScoring.ts';
 import { pickBoots, pickStarters } from './starters.ts';
+import { synergy, synergyScore } from './synergy.ts';
 import { analyzeThreats, threatLines } from './threats.ts';
 
 interface Scored {
@@ -17,7 +23,7 @@ interface Scored {
   base: number;
   top: string[];
   sit: SituationalReason[];
-  learned: { key: string; params: Record<string, number> }[];
+  learned: TextKey[];
   sitScore: number;
 }
 
@@ -30,23 +36,29 @@ function scoreItems(db: Db, champ: Champion, cls: BuildClass, t: Threats, req: B
     // The player's own results with this champion in similar matches nudge item values.
     const learned = lesson && Math.abs(lesson.bonus) >= 0.1
       ? [{ key: lesson.bonus > 0 ? 'build.historyWin' : 'build.historyLoss', params: { wins: lesson.wins, games: lesson.games } }] : [];
-    return { item, base: base.score + coreBonus(item, cls) + (lesson ? lesson.bonus : 0), top: base.top, sit, learned, sitScore: sit.reduce((s, r) => s + r.v, 0) };
+    // Heal and shield power and mana regeneration mark an enchanter's item: its effects serve allies.
+    const forAllies = cls !== 'enchanter' && (item.features.stats.hsp || item.features.stats.manaRegen) ? 1.5 : 0;
+    const own = base.score + effectScore(item, cls).score + coreBonus(item, cls) + (lesson ? lesson.bonus : 0) - forAllies;
+    return { item, base: own, top: base.top, sit, learned, sitScore: sit.reduce((s, r) => s + r.v, 0) };
   });
 }
 
-const ranked = (list: Scored[], sitWeight: number, baseWeight = 1) =>
-  [...list].sort((a, b) => (b.base * baseWeight + b.sitScore * sitWeight) - (a.base * baseWeight + a.sitScore * sitWeight));
-
-// Items already bought in game stay in the build (ranked first) and are never replaced. In a
-// running match the situation weighs more, so the core adapts too (not only boots).
-function pickCore(scored: Scored[], owned: Set<number>, t: Threats): Scored[] {
-  const core = scored.filter((s) => owned.has(s.item.id)).slice(0, 3);
-  for (const s of ranked(scored, t.live ? 0.6 : 0.15)) {
-    if (core.length >= 3) break;
-    if (!core.includes(s) && !conflicts(s.item, core.map((c) => c.item))) core.push(s);
+// Adds items to `chosen` up to `size`: each time the one worth the most next to what is
+// already there, never one whose passive is already in the build.
+function grow(scored: Scored[], chosen: Item[], size: number, sitWeight: number, cls: BuildClass): Item[] {
+  const out = [...chosen];
+  while (out.length < size) {
+    let best: Scored | null = null;
+    let bestValue = -Infinity;
+    for (const s of scored) {
+      if (out.includes(s.item) || conflicts(s.item, out)) continue;
+      const value = s.base + s.sitScore * sitWeight + synergyScore(s.item, out, cls);
+      if (value > bestValue) { best = s; bestValue = value; }
+    }
+    if (!best) break;
+    out.push(best.item);
   }
-  // Buy order: owned items first, then % penetration and multiplier items last.
-  return core.sort((a, b) => (Number(owned.has(b.item.id)) - Number(owned.has(a.item.id))) || (lateItem(a.item) - lateItem(b.item)));
+  return out;
 }
 
 // Crit items only for marksmen (no Yun Tal on Garen).
@@ -60,14 +72,12 @@ function pickSituational(scored: Scored[], taken: Item[], cls: BuildClass): Scor
   return situ;
 }
 
-// In a running match the situation counts more: a fed burst enemy pulls Maw / Edge of Night in.
-function fillFull(scored: Scored[], taken: Item[], t: Threats): Item[] {
-  const full = [...taken];
-  for (const s of ranked(scored, t.live ? 0.6 : 0.3).filter((x) => !taken.includes(x.item))) {
-    if (full.length >= 5) break;
-    if (!conflicts(s.item, full)) full.push(s.item);
-  }
-  return full;
+// The threats of a request: static champion traits, then what the match shows.
+function threatsOf(db: Db, req: BuildRequest, laner: Champion | null, weights: Record<string, number>): Threats {
+  const enemies = (req.enemyIds || []).map((id) => (id ? db.byId[id] : undefined)).filter((c): c is Champion => !!c);
+  const t = applyEnemyItems(db, analyzeThreats(laner, enemies, (e) => weights[e.id] || 1), req.enemyItems || null, weights);
+  const allies = Object.values(req.allyItems || {}).flat();
+  return { ...t, defence: enemyDefence(db, req), allyGrievous: allies.some((id) => !!db.itemById[id]?.features.flags.grievous) };
 }
 
 export function recommendBuild(db: Db, req: BuildRequest): Build {
@@ -76,31 +86,45 @@ export function recommendBuild(db: Db, req: BuildRequest): Build {
   const enemyId = req.enemyId || null;
   const role = req.role || champ.positions[0];
   const laner = enemyId ? db.byId[enemyId] || null : null;
-  const enemies = (req.enemyIds || []).map((id) => (id ? db.byId[id] : undefined)).filter((c): c is Champion => !!c);
   const cls = classOf(champ, role);
   const weights = threatWeights(db, req.enemyStats || null, req.enemyItems || null);
-  const t = applyEnemyItems(db, analyzeThreats(laner, enemies, (e) => weights[e.id] || 1), req.enemyItems || null, weights);
+  const t = threatsOf(db, req, laner, weights);
   const owned = new Set((req.ownedItems || []).filter((id) => db.itemById[id] && db.itemById[id].category === 'legendary'));
 
   const scored = scoreItems(db, champ, cls, t, req);
-  const core = pickCore(scored, owned, t);
-  const taken = core.map((c) => c.item);
-  for (const s of scored) if (owned.has(s.item.id) && !taken.includes(s.item)) taken.push(s.item);
+  const byItem = new Map(scored.map((s) => [s.item, s]));
+  // Items already bought in game stay in the build (first) and are never replaced. In a
+  // running match the situation weighs more, so the core adapts too (not only boots).
+  const have = scored.filter((s) => owned.has(s.item.id)).map((s) => s.item);
+  const start = grow(scored, have, 3, t.live ? 0.6 : 0.15, cls);
+  // Buy order of the core: owned items first, then % penetration and multiplier items last.
+  const core = start.slice(0, 3).sort((a, b) => (Number(owned.has(b.id)) - Number(owned.has(a.id))) || (lateItem(a) - lateItem(b)));
+  const taken = [...core, ...start.slice(3)];
   const situ = pickSituational(scored, taken, cls);
-  const full = fillFull(scored, taken, t);
-  const reasonsOf = (s: Scored) => [...s.sit.map((r) => ({ key: r.key })), ...s.learned];
+  // In a running match the situation counts more: a fed burst enemy pulls Maw / Edge of Night in.
+  const full = grow(scored, taken, 5, t.live ? 0.6 : 0.3, cls).slice(0, 5);
+  // Why an item: the enemy situation, the player's history, and what it does with the rest.
+  const reasonsOf = (item: Item): TextKey[] => {
+    const s = byItem.get(item);
+    const own = s ? [...s.sit, ...synergy(item, full.filter((x) => x !== item), cls)].filter((r) => r.v > 0).sort((a, b) => b.v - a.v) : [];
+    return [...own.map((r) => ({ key: r.key, ...(r.params ? { params: r.params } : {}) })), ...(s ? s.learned : [])];
+  };
 
   const build: Build = {
     championId: champ.id, enemyId, role, cls, threats: threatLines(t, weights),
     starters: pickStarters(db, cls, role, laner),
     boots: pickBoots(db, cls, t),
-    core: core.map((c) => ({ id: c.item.id, stats: c.top, owned: owned.has(c.item.id), reasons: reasonsOf(c) })),
-    situational: situ.map((s) => ({ id: s.item.id, reasons: reasonsOf(s) })),
-    full: full.slice(0, 5).map((i) => i.id),
+    core: core.map((item) => ({ id: item.id, stats: byItem.get(item)?.top || [], owned: owned.has(item.id), reasons: reasonsOf(item) })),
+    situational: situ.map((s) => ({ id: s.item.id, reasons: reasonsOf(s.item) })),
+    full: full.map((i) => i.id),
     order: [],
     ...recommendLoadout(db, { champ, cls, role, laner, threats: t }),
   };
   build.order = purchaseOrder(build);
-  if (req.ownedItems) build.next = nextPurchase(db, build, req.ownedItems, req.gold ?? null);
+  if (req.ownedItems) {
+    build.next = nextPurchase(db, build, req.ownedItems, req.gold ?? null);
+    const next = build.next && db.itemById[build.next.id];
+    if (build.next && next) build.next.reasons = build.boots && next.id === build.boots.id ? [{ key: build.boots.reason }] : reasonsOf(next);
+  }
   return build;
 }

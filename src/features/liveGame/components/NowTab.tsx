@@ -45,7 +45,7 @@ export function NowTab({ game, data: model, onOpponent }: { game: PlayingGame; d
           <div className="card-kicker">{t('build.situational')}</div>
           <div className="chips">
             {build.situational.map((it) => (
-              <span key={it.id} className="sit-item"><ItemIcon id={it.id} size="sm" /><span>{data.item(it.id)?.name}</span>{it.reasons.map((r) => <span key={r.key} className="chip">{t(r.key)}</span>)}</span>
+              <span key={it.id} className="sit-item"><ItemIcon id={it.id} size="sm" /><span>{data.item(it.id)?.name}</span>{it.reasons.map((r) => <span key={r.key} className="chip">{t(r.key, r.params)}</span>)}</span>
             ))}
           </div>
         </div>

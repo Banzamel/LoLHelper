@@ -48,6 +48,17 @@ export interface ItemFeatures {
   stats: Record<string, number>;
   flags: Record<string, boolean>;
   passives: string[];
+  // Numbers of the effects, read from their full texts (data/effectValues.ts): onHit (damage
+  // per attack), spellblade (% base AD), targetHp (% of the target's health), amp (% increased
+  // damage), armorShred / mrShred / penPct (%), apMult (%).
+  values?: Record<string, number>;
+}
+
+// One passive or active of an item in full, with its numbers (English, from Meraki Analytics).
+export interface ItemEffectText {
+  name: string;
+  text: string;
+  active?: boolean;
 }
 
 export interface Item {
@@ -59,6 +70,8 @@ export interface Item {
   into: number[];
   category: string;
   features: ItemFeatures;
+  // Missing for items Meraki does not list.
+  effects?: ItemEffectText[];
   icon: string;
 }
 

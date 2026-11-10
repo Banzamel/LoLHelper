@@ -1,5 +1,5 @@
 // The widget's main block: the starting items before the first purchase, then the next item
-// with the gold still missing, or "build done".
+// with the gold still missing and the main reason for it, or "build done".
 import type { PlayingGame } from '../../../core/live/types.ts';
 import { useT } from '../../../shared/i18n/useT.ts';
 import { ItemIcon, useGameData } from '../../database/index.ts';
@@ -22,6 +22,7 @@ export function WidgetNext({ game, model }: { game: PlayingGame; model: GameBuil
   const it = next ? data.item(next.id) : null;
   if (!next || !it) return <div className="w-muted">{t('live.buildDone')}</div>;
   const missing = next.cost - game.me.gold;
+  const why = next.reasons && next.reasons[0];
   return (
     <div className={`w-next ${missing <= 0 ? 'afford' : ''}`}>
       <ItemIcon id={it.id} nameOnly />
@@ -29,6 +30,7 @@ export function WidgetNext({ game, model }: { game: PlayingGame; model: GameBuil
         <div className="w-next-name">{it.name}</div>
         <div className="gold-text w-next-cost">{t('live.remaining', { n: next.cost })}</div>
         <span className={`chip ${missing <= 0 ? 'plus' : ''}`}>{missing <= 0 ? t('overlay.canAfford') : t('live.missingGold', { n: missing })}</span>
+        {why ? <div className="w-why">{t(why.key, why.params)}</div> : null}
       </div>
     </div>
   );

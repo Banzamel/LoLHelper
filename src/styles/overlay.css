@@ -7,8 +7,9 @@ body.overlay-body { display: block; padding: 6px; }
   background: rgba(1, 10, 19, 0.86); border: 1px solid rgba(200, 170, 110, 0.55);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55); transition: opacity 0.2s;
 }
-.widget.move { border: 1px dashed var(--teal); cursor: move; -webkit-app-region: drag; }
-.widget.move * { -webkit-app-region: drag; }
+.widget.move { border: 1px dashed var(--teal); cursor: move; user-select: none; }
+.w-size { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); cursor: default; }
+.w-size input { flex: 1; min-width: 0; margin: 0; accent-color: var(--gold); cursor: pointer; }
 
 .w-head { display: flex; align-items: center; gap: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); }
 .w-head .spacer { flex: 1; }
@@ -20,6 +21,7 @@ body.overlay-body { display: block; padding: 6px; }
 .w-next-name { color: var(--gold-hi); font-weight: 700; font-size: 14px; line-height: 1.2; }
 .w-next-cost { font-size: 12px; }
 .w-next .chip { margin-top: 3px; font-size: 11px; }
+.w-why { margin-top: 3px; font-size: 11px; line-height: 1.25; color: var(--teal); }
 
 .w-strip { display: flex; gap: 4px; }
 .w-strip .item-icon { width: 30px; height: 30px; }

@@ -34,6 +34,7 @@ export function threatLines(t: Threats, weights: Record<string, number>): TextKe
   if (t.burstAD + t.burstAP >= 0.25) lines.push({ key: 'threat.burst' });
   if (t.cc >= 1.6) lines.push({ key: 'threat.cc' });
   if (t.autoAttack >= 0.4) lines.push({ key: 'threat.autoAttack' });
+  if (t.defence) lines.push({ key: 'threat.defence', params: { armor: t.defence.armor, mr: t.defence.mr } });
   if (t.live) lines.push({ key: 'threat.fromItems' });
   for (const [id, w] of Object.entries(weights)) if (w >= FED) lines.push({ key: 'threat.fed', params: { enemy: id } });
   return lines;

@@ -1,5 +1,6 @@
 // The in-game widget: next item, build progress, next skill and the lane opponent's items,
-// refreshed from the live match. In move mode it can be dragged anywhere.
+// refreshed from the live match. In move mode it can be dragged anywhere (by Rust, which follows
+// the cursor) and resized with its slider.
 import { useEffect, useRef } from 'react';
 import { widgetWindow } from '../../../platform/index.ts';
 import { useT } from '../../../shared/i18n/useT.ts';
@@ -8,6 +9,7 @@ import { needsStarters } from '../../liveGame/index.ts';
 import type { WidgetUpdate } from '../types.ts';
 import { canAfford, WidgetNext } from './WidgetNext.tsx';
 import { WidgetDetails } from './WidgetDetails.tsx';
+import { WidgetSize } from './WidgetSize.tsx';
 
 const hotkey = (key: string) => (key || '').replace('CommandOrControl', 'Ctrl');
 
@@ -15,6 +17,7 @@ export function Widget({ update }: { update: WidgetUpdate }) {
   const t = useT();
   const data = useMaybeGameData();
   const ref = useRef<HTMLDivElement>(null);
+  const controls = useRef<HTMLDivElement>(null);
   const couldAfford = useRef(false);
   const { state, game, model } = update;
   const ready = !!(game && model && data);
@@ -31,15 +34,18 @@ export function Widget({ update }: { update: WidgetUpdate }) {
     couldAfford.current = affordable;
   }, [affordable]);
 
-  // The window is only as tall as the widget.
+  // The window is only as tall as the widget; everything above the controls drags it.
   useEffect(() => {
-    requestAnimationFrame(() => { if (ref.current) void widgetWindow.resize(ref.current.offsetHeight + 12); });
+    requestAnimationFrame(() => {
+      if (!ref.current) return;
+      const height = ref.current.offsetHeight + 12;
+      void widgetWindow.resize(height, controls.current ? controls.current.getBoundingClientRect().top : height);
+    });
   });
 
   const hint = state.moveMode ? <div className="w-hint">{t('overlay.moveHint', { key: hotkey(update.overlay.moveKey) })}</div> : null;
-  const onMouseDown = state.moveMode ? () => { void widgetWindow.startDragging(); } : undefined;
   return (
-    <div id="widget" ref={ref} className={`widget ${state.moveMode ? 'move' : ''}`} style={{ opacity: state.opacity || 0.92 }} onMouseDown={onMouseDown}>
+    <div id="widget" ref={ref} className={`widget ${state.moveMode ? 'move' : ''}`} style={{ opacity: state.opacity || 0.92 }}>
       {ready ? (
         <>
           <div className="w-head">
@@ -54,6 +60,7 @@ export function Widget({ update }: { update: WidgetUpdate }) {
         <><div className="w-head">{t('app.name')}</div><div className="w-muted">{t('overlay.preview')}</div></>
       )}
       {hint}
+      {state.moveMode ? <div ref={controls}><WidgetSize scale={update.overlay.scale || 1} /></div> : null}
     </div>
   );
 }

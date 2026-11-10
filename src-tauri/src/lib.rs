@@ -24,7 +24,8 @@ pub fn run() {
             client::lcu_start, client::lcu_status, client::lcu_request, client::live_game_data,
             files::data_folders, files::data_read_text, files::bundled_read_text, files::data_write_text, files::data_exists,
             files::data_rename, files::data_list, files::data_modified, files::data_remove_dir, files::data_replace_dir,
-            downloads::download_files, widget::overlay_apply, widget::overlay_place, widget::overlay_resize, widget::overlay_reload,
+            downloads::download_files, widget::overlay_apply, widget::overlay_place, widget::overlay_resize, widget::overlay_scale,
+            widget::overlay_reload,
             dev::dev_options,
         ])
         .build(tauri::generate_context!());

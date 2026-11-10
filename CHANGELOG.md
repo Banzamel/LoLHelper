@@ -7,6 +7,35 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Added
+- **Builds are picked as a set**: every next item is the best one next to what you already bought or chose — crit
+  chance with crit damage, attack speed with on-hit damage, percentage penetration and Rabadon's Deathcap with the
+  damage they multiply, lethality with lethality; crit over 100% and piles of ability haste or life steal lose value.
+  The reason is shown with the item.
+- **Item effects count, with their numbers**: the database now carries every passive and active in full (damage per
+  attack, % of the target's health, resistance reduction, increased damage…), shown under the item description
+  (in English) and used to value the item for your class.
+- **The enemies' real stats in a match**: their average armor, magic resist and health from champion, level and
+  items decide which penetration or % health damage is suggested, and the number is shown as the reason. Their item
+  passives count too: their Grievous Wounds lower the value of your healing, their shields call for shield
+  breakers, their penetration lowers the value of your resistances.
+- An ally who already applies Grievous Wounds makes your own anti-heal item worth less.
+- **Widget**: a size slider on the widget itself in move mode (and in Settings), and the main reason for the next
+  item under its name.
+
+### Fixed
+- Boots were suggested again after upgrading Berserker's Greaves to Gunmetal Greaves (also with boots in the
+  boots slot).
+- The widget could not be dragged during a match: it now follows the cursor itself and never takes the focus
+  from the game.
+- The widget's build now also refreshes after a kill or an enemy level-up, not only after a purchase.
+- Item effects read wrongly from Riot's short texts (Blade of the Ruined King, Liandry's Torment, Death's Dance,
+  Yun Tal Wildarrows, Serpent's Fang); support items are no longer suggested to mages and fighters.
+
+### Changed
+- The database format changed (full item effects): a database downloaded by an older version is ignored until it
+  is updated again in Settings; the bundled one is used meanwhile.
+
 ## [0.13.1] - 2026-11-08
 
 ### Changed

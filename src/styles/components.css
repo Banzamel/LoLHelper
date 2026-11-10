@@ -88,6 +88,10 @@
 
 /* Item description markup from Data Dragon */
 .item-desc { font-size: 13px; color: var(--text); }
+.item-effects { margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--line, rgba(200, 170, 110, 0.25)); font-size: 12px; color: var(--muted); }
+.item-effects p { margin: 4px 0 0; }
+.item-effects strong { color: var(--gold); }
+.item-effects-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gold-dim, var(--gold)); }
 .item-desc stats { display: block; color: var(--gold-hi); margin-bottom: 8px; }
 .item-desc attention { color: var(--gold-hi); font-weight: 700; }
 .item-desc passive, .item-desc active { color: var(--gold); font-weight: 600; }

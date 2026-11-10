@@ -1,15 +1,22 @@
 // Data Dragon items, rune trees and summoner spells as the app's language-independent records.
+// Items also get their full effects with numbers from Meraki Analytics (effectValues.ts).
 import type { RawJson } from '../../shared/json.ts';
+import { effectTexts, effectValues, refineFlags } from '../effectValues.ts';
 import { extractItemFeatures } from '../parse.ts';
-import type { Item, RuneData, SummonerSpell } from '../types.ts';
+import type { Item, ItemFeatures, RuneData, SummonerSpell } from '../types.ts';
 
 const SR_MAP = '11';
 
-function itemCategory(item: RawJson): string {
+// A pair of finished boots: tagged as boots and built from Boots.
+const isBootsPair = (item: RawJson | undefined) => !!item && (item.tags || []).includes('Boots') && !!item.from;
+
+function itemCategory(item: RawJson, all: RawJson): string {
   const tags: string[] = item.tags || [];
   const name: string = item.name;
   if (tags.includes('Trinket')) return 'trinket';
   if (tags.includes('Consumable')) return 'consumable';
+  // Not every boots upgrade carries the Boots tag (Gunmetal Greaves).
+  if (!tags.includes('Boots') && (item.from || []).some((f: string) => isBootsPair(all[f]))) return 'boots-upgrade';
   if (tags.includes('Boots')) return item.into ? (item.from ? 'boots' : 'component') : (item.from ? 'boots-upgrade' : 'component');
   if (/Pup|Hatchling|Seedling/.test(name)) return 'jungle';
   if (tags.includes('GoldPer') && item.gold.total <= 400) return 'support';
@@ -25,7 +32,18 @@ function isShopItem(id: string, item: RawJson): boolean {
     && !item.requiredChampion && !item.requiredAlly && !item.hideFromAll;
 }
 
-export function buildItems(enItems: RawJson): Item[] {
+// Riot's stats and flags, with the flags settled and the numbers added from the full effects.
+function features(item: RawJson, meraki: RawJson | undefined): Pick<Item, 'features' | 'effects'> {
+  const base = extractItemFeatures(item);
+  if (!meraki) return { features: base };
+  const effects = effectTexts(meraki);
+  const values = effectValues(effects);
+  const full: ItemFeatures = { ...base, flags: refineFlags(base.flags, effects, values), ...(Object.keys(values).length ? { values } : {}) };
+  return { features: full, ...(effects.length ? { effects } : {}) };
+}
+
+// merakiItems: Meraki's items by id ({} when it could not be fetched: the database still builds).
+export function buildItems(enItems: RawJson, merakiItems: RawJson = {}): Item[] {
   return Object.entries<RawJson>(enItems).filter(([id, item]) => isShopItem(id, item)).map(([id, item]) => ({
     id: Number(id),
     nameEn: item.name,
@@ -33,8 +51,8 @@ export function buildItems(enItems: RawJson): Item[] {
     tags: item.tags || [],
     from: (item.from || []).map(Number),
     into: (item.into || []).map(Number),
-    category: itemCategory(item),
-    features: extractItemFeatures(item),
+    category: itemCategory(item, enItems),
+    ...features(item, merakiItems[id]),
     icon: `img/item/${id}.png`,
   })).sort((a, b) => a.gold.total - b.gold.total);
 }

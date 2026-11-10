@@ -1,7 +1,8 @@
-// The selected item: cost, plain text, description and its build path both ways.
+// The selected item: cost, plain text, description, full effects and its build path both ways.
 import { useT } from '../../../shared/i18n/useT.ts';
 import { useGameData } from '../hooks/useGameData.ts';
 import type { UiItem } from '../types.ts';
+import { ItemEffects } from './ItemEffects.tsx';
 import { ItemIcon } from './ItemIcon.tsx';
 
 export function ItemDetail({ item: it, onSelect }: { item: UiItem | null; onSelect: (id: number) => void }) {
@@ -26,6 +27,7 @@ export function ItemDetail({ item: it, onSelect }: { item: UiItem | null; onSele
       </div>
       {it.plaintext ? <p className="muted item-plain">{it.plaintext}</p> : null}
       <div className="item-desc" dangerouslySetInnerHTML={{ __html: it.description || '' }} />
+      <ItemEffects item={it} />
       {tree(it.from, t('items.buildsFrom'))}
       {tree(it.into, t('items.buildsInto'))}
     </div>

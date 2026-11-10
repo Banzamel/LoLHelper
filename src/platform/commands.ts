@@ -27,7 +27,8 @@ export const commands = {
 
   overlayApply: (visible: boolean, interactive: boolean) => invoke<void>('overlay_apply', { visible, interactive }),
   overlayPlace: (x: number, y: number) => invoke<void>('overlay_place', { x, y }),
-  overlayResize: (height: number) => invoke<void>('overlay_resize', { height }),
+  overlayResize: (height: number, dragHeight: number) => invoke<void>('overlay_resize', { height, dragHeight }),
+  overlayScale: (scale: number) => invoke<void>('overlay_scale', { scale }),
   overlayReload: () => invoke<void>('overlay_reload'),
 
   devOptions: () => invoke<DevOptions>('dev_options'),

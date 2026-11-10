@@ -19,6 +19,14 @@ export interface Threats {
   empty: boolean;
   // Adjusted by what the enemies actually bought in a running match.
   live?: boolean;
+  // In a match (live/enemyProfile.ts): the average enemy's stats from champion, level and items.
+  defence?: { armor: number; mr: number; hp: number };
+  // Share of the enemies who bought armour / magic penetration, weighted by how fed they are.
+  pen?: { armor: number; magic: number };
+  // Share of the enemies with Grievous Wounds on an item.
+  antiHeal?: number;
+  // An ally already applies Grievous Wounds.
+  allyGrievous?: boolean;
 }
 
 // A counter-pick or build reason; delta is the score change it brought.
@@ -67,6 +75,8 @@ export interface NextPurchase {
   cost: number;
   buy: { id: number; cost: number } | null;
   parts: { id: number; owned: boolean; cost: number }[];
+  // Why this item, the strongest reason first.
+  reasons?: TextKey[];
 }
 
 export interface Build extends Loadout {
@@ -103,6 +113,9 @@ export interface BuildRequest {
   // In a match: what each enemy bought and their score, by champion id.
   enemyItems?: Record<string, number[]> | null;
   enemyStats?: Record<string, { kills?: number; deaths?: number; assists?: number }> | null;
+  enemyLevels?: Record<string, number> | null;
+  // What each ally (the player excluded) bought, by champion id.
+  allyItems?: Record<string, number[]> | null;
   ownedItems?: number[] | null;
   gold?: number | null;
   history?: LearningEntry[] | null;

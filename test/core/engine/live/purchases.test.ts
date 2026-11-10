@@ -25,3 +25,12 @@ test('buy order puts boots second; the part to buy now fits the gold and uses ow
   // Rune boots count as Boots: Steelcaps then costs 900.
   assert.strictEqual(planItem(db, id('Plated Steelcaps'), [2422]).cost, 900);
 });
+
+test('boots already bought are not recommended again, upgraded ones included', () => {
+  const id = (n) => db.items.find((i) => i.nameEn === n).id;
+  const build = { full: [id('Black Cleaver')], boots: { id: id("Berserker's Greaves"), upgrade: null, reason: '' } };
+  const have = (boots) => nextPurchase(db, build, [id('Black Cleaver'), id(boots)]);
+  assert.strictEqual(nextPurchase(db, build, [id('Black Cleaver')]).id, build.boots.id);
+  // Gunmetal Greaves is not tagged as boots by Riot.
+  for (const boots of ['Plated Steelcaps', 'Armored Advance', 'Gunmetal Greaves']) assert.strictEqual(have(boots), null, boots);
+});

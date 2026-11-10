@@ -1,5 +1,5 @@
 // Builds the local champion/item database from Riot's Data Dragon (official, public CDN)
-// and Meraki Analytics (champion positions and archetypes). Icons are downloaded locally
+// and Meraki Analytics (champion positions and archetypes, full item effects). Icons are downloaded locally
 // so the app works offline once the database exists.
 //
 // Output: champions.json / items.json hold language-independent data (stats, traits, icons);
@@ -27,6 +27,7 @@ export interface Progress { key: string; params?: Record<string, string | number
 
 export const MERAKI_HOST = 'https://cdn.merakianalytics.com';
 const MERAKI = `${MERAKI_HOST}/riot/lol/resources/latest/en-US/champions.json`;
+const MERAKI_ITEMS = `${MERAKI_HOST}/riot/lol/resources/latest/en-US/items.json`;
 // Play rate per position (% of games), keyed by champion key.
 const MERAKI_RATES = `${MERAKI_HOST}/riot/lol/resources/latest/en-US/championrates.json`;
 
@@ -54,12 +55,13 @@ export async function buildDatabase({ io, onProgress = () => {} }: { io: Builder
   await Promise.all(locales.map(async (loc) => { raw[loc] = await fetchLocale(io, cdn, loc); }));
   const meraki = await io.getJson(MERAKI).catch(() => ({}));
   const rates = (await io.getJson(MERAKI_RATES).catch(() => ({}))).data || {};
+  const merakiItems = await io.getJson(MERAKI_ITEMS).catch(() => ({}));
 
   onProgress({ key: 'update.analyzing', pct: 15 });
   const en = raw.en_US;
   const ids = Object.keys(en.champs).sort();
   const champions = ids.map((id) => buildChampion(en.champs[id], meraki[id], rates[en.champs[id].key]));
-  const items = buildItems(en.items);
+  const items = buildItems(en.items, merakiItems);
   const runes = buildRunes(en.runes);
   const summoners = buildSummoners(en.summoners);
   for (const [lang, loc] of Object.entries(DATA_LOCALES)) {

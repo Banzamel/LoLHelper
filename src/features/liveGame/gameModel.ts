@@ -1,6 +1,7 @@
 // In-game helpers shared by the Match view and the widget: who the lane opponent is and the
 // build adapted to the live match.
 import type { Role } from '../../core/data/types.ts';
+import { isFinishedBoots } from '../../core/engine/live/purchases.ts';
 import type { Build } from '../../core/engine/types.ts';
 import type { LivePlayer, PlayingGame } from '../../core/live/types.ts';
 import type { BuildService } from '../builds/index.ts';
@@ -47,10 +48,12 @@ export async function buildForGame(builds: BuildService, data: GameData, game: P
     role,
     enemyItems: Object.fromEntries(game.enemies.map((e) => [key(e), bought(data, e.items)])),
     enemyStats: Object.fromEntries(game.enemies.map((e) => [key(e), e.scores || {}])),
+    enemyLevels: Object.fromEntries(game.enemies.map((e) => [key(e), e.level])),
+    allyItems: Object.fromEntries(game.allies.filter((a) => a.name !== game.me.name).map((a) => [key(a), bought(data, a.items)])),
     ownedItems: game.me.items,
     gold: game.me.gold,
   });
-  const ownedBoots = owned.find((id) => ['boots', 'boots-upgrade'].includes(data.item(id)?.category || ''));
+  const ownedBoots = owned.find((id) => isFinishedBoots(data.db, id));
   const fullIds = build.order.map((id) => (build.boots && id === build.boots.id && ownedBoots ? ownedBoots : id));
   return { role, opp, owned, build, fullIds };
 }
@@ -61,5 +64,9 @@ export function nextSkill(build: Build, level: number): { key: string; level: nu
   if (!levels || level >= 18) return null;
   return { key: levels[level], level: level + 1 };
 }
+
+// What the build depends on besides the player's own items, level and gold: the enemies'
+// items, levels, scores and positions and the allies' items.
+export const buildInputs = (game: PlayingGame) => [game.enemies.map((e) => [e.items, e.level, e.scores, e.position]), game.allies.map((a) => a.items)];
 
 export const csPerMin = (cs: number | undefined, game: { gameTime: number }) => ((cs || 0) / Math.max(1, game.gameTime / 60)).toFixed(1);

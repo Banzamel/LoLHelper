@@ -2,6 +2,7 @@
 // weights, a bonus for proven core items, and situational value against the enemy threats.
 import type { Champion, Item } from '../../data/types.ts';
 import type { BuildClass, Threats } from '../types.ts';
+import { effectScale } from './itemEffects.ts';
 
 const GOLD: Record<string, number> = { ad: 35, ap: 20, armor: 20, mr: 18, hp: 2.67, as: 25, crit: 40, haste: 26.7, lethality: 30, armorPen: 40,
   magicPen: 46, magicPenFlat: 31, lifesteal: 37.5, omnivamp: 40, mana: 1.4, manaRegen: 3, hpRegen: 3, hsp: 66, tenacity: 10, msPct: 39 };
@@ -52,19 +53,34 @@ export function baseScore(item: Item, w: Record<string, number>, champ: Champion
   return { score: score / 1000, top: [...new Set(contrib.slice(0, 3).map(([s]) => (s === 'magicPenFlat' ? 'magicPen' : s)))] };
 }
 
-export interface SituationalReason { v: number; key: string }
+export interface SituationalReason { v: number; key: string; params?: Record<string, number> }
+
+// How far `x` is over `from`, in steps, up to 3; a sliver over is not a reason yet.
+const over = (x: number, from: number, step: number) => { const v = Math.min(3, (x - from) / step); return v >= 0.25 ? v : 0; };
 
 export function situational(item: Item, cls: BuildClass, t: Threats): SituationalReason[] {
   const f = item.features.flags;
   const s = item.features.stats;
   const reasons: SituationalReason[] = [];
-  const add = (v: number, key: string) => reasons.push({ v, key });
+  const add = (v: number, key: string, params?: Record<string, number>) => { if (v) reasons.push({ v, key, ...(params ? { params } : {}) }); };
   const squishy = !['tank', 'support-tank', 'bruiser', 'ap-bruiser'].includes(cls);
   const dealsDamage = !['enchanter', 'support-tank', 'tank'].includes(cls);
-  if (f.grievous && t.healing >= 0.3) add(3 * t.healing + 1, 'build.grievous');
-  if (dealsDamage && (s.armorPen || s.magicPen || f.maxHpDamage || f.armorShred) && t.tanks >= 0.35) add(2.5 * t.tanks, 'build.penVsTanks');
-  if (s.armor && t.ad >= 0.6) add(2 * t.ad * (squishy ? 0.7 : 1), 'build.armor');
-  if (s.mr && t.ap >= 0.5) add(2 * t.ap * (squishy ? 0.7 : 1), 'build.mr');
+  const d = t.defence;
+  // An ally's Grievous Wounds already covers most of the healing.
+  if (f.grievous && t.healing >= 0.3) add((3 * t.healing + 1) * (t.allyGrievous ? 0.4 : 1), 'build.grievous');
+  if (d && dealsDamage) {
+    // In a match the enemies' real stats decide which penetration pays off.
+    // Penetration from a passive counts too (Terminus), and so does reducing the resistance.
+    const pen = !!(item.features.values && item.features.values.penPct);
+    if (WEIGHTS[cls].ad && (s.armorPen || f.armorShred || pen)) add(over(d.armor, 90, 30), 'build.penVsArmor', { armor: d.armor });
+    if (WEIGHTS[cls].ap && (s.magicPen || f.mrShred || pen)) add(over(d.mr, 55, 20), 'build.penVsMr', { mr: d.mr });
+    if (f.maxHpDamage) add(over(d.hp, 2400, 500) * effectScale(item, 'maxHpDamage'), 'build.vsHealth', { hp: d.hp });
+  } else if (dealsDamage && (s.armorPen || s.magicPen || f.maxHpDamage || f.armorShred || f.mrShred) && t.tanks >= 0.35) add(2.5 * t.tanks, 'build.penVsTanks');
+  // Resistances lose value against enemies who bought penetration.
+  if (s.armor && t.ad >= 0.6) add(2 * t.ad * (squishy ? 0.7 : 1) * (1 - 0.4 * (t.pen ? t.pen.armor : 0)), 'build.armor');
+  if (s.mr && t.ap >= 0.5) add(2 * t.ap * (squishy ? 0.7 : 1) * (1 - 0.4 * (t.pen ? t.pen.magic : 0)), 'build.mr');
+  // Healing is cut by the enemies' Grievous Wounds.
+  if ((s.lifesteal || s.omnivamp || f.healSelf) && (t.antiHeal || 0) >= 0.4) add(-1.5 * (t.antiHeal || 0), 'build.healingCut');
   if (f.stasis && (t.burstAD + t.burstAP) >= 0.25) add(2.5, 'build.stasis');
   if ((f.revive || f.lifeline) && t.burstAD + t.burstAP >= 0.25 && squishy) add(2, 'build.surviveBurst');
   if (f.spellshield && t.ap >= 0.5) add(1.5, 'build.spellshield');

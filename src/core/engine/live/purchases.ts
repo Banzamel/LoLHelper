@@ -1,11 +1,18 @@
 // The player's own inventory decides the next item to buy: the buy order, the recipe tree
 // against what is owned, and the biggest part affordable right now.
-import type { Db, Item } from '../../data/types.ts';
+import type { Db } from '../../data/types.ts';
 import type { Build, NextPurchase } from '../types.ts';
 
 // Rune-granted Slightly Magical Boots count as plain Boots when planning purchases.
 const ALIASES: Record<number, number> = { 2422: 1001 };
-const isFinishedBoots = (it: Item | undefined) => !!it && (it.category === 'boots' || it.category === 'boots-upgrade');
+
+// Finished boots in the inventory, wherever they sit (the boots slot too). Riot does not tag every
+// upgrade as boots (Gunmetal Greaves), so anything built from a pair of boots counts as well.
+export function isFinishedBoots(db: Db, id: number): boolean {
+  const it = db.itemById[id];
+  if (!it) return false;
+  return it.category === 'boots' || it.category === 'boots-upgrade' || it.from.some((f) => db.itemById[f]?.category === 'boots');
+}
 
 export interface PlanNode {
   id: number;
@@ -55,7 +62,7 @@ function buyNow(node: PlanNode, gold: number): PlanNode | null {
 // and its direct parts (owned or not).
 export function nextPurchase(db: Db, build: Pick<Build, 'full' | 'boots'>, owned: number[] | null, gold: number | null = null): NextPurchase | null {
   const have = new Set(owned || []);
-  const bootsDone = (owned || []).some((id) => isFinishedBoots(db.itemById[id]));
+  const bootsDone = (owned || []).some((id) => isFinishedBoots(db, id));
   for (const id of purchaseOrder(build)) {
     if (have.has(id) || !db.itemById[id]) continue;
     if (build.boots && id === build.boots.id && bootsDone) continue;
