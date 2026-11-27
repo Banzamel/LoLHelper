@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.15.3] - 2026-11-27
+
 ### Fixed
 - The ability max order is now set for 64 more champions (almost all of them), instead of being guessed from
   the ability descriptions.
@@ -350,7 +352,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.15.2...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.15.3...HEAD
+[0.15.3]: https://github.com/Banzamel/LoLHelper/compare/v0.15.2...v0.15.3
 [0.15.2]: https://github.com/Banzamel/LoLHelper/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/Banzamel/LoLHelper/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/Banzamel/LoLHelper/compare/v0.14.0...v0.15.0
