@@ -7,6 +7,10 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Fixed
+- The ability max order is now set for 64 more champions (almost all of them), instead of being guessed from
+  the ability descriptions.
+
 ## [0.15.2] - 2026-11-27
 
 ### Fixed
