@@ -1,7 +1,7 @@
 # LoL Helper
 
-[![Build & release](https://github.com/Banzamel/LoLHelper/actions/workflows/release.yml/badge.svg)](https://github.com/Banzamel/LoLHelper/actions/workflows/release.yml)
-[![Latest release](https://img.shields.io/github/v/release/Banzamel/LoLHelper)](https://github.com/Banzamel/LoLHelper/releases/latest)
+[![Build & release](https://github.com/Banzamel/lol-helper/actions/workflows/release.yml/badge.svg)](https://github.com/Banzamel/lol-helper/actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/github/v/release/Banzamel/lol-helper)](https://github.com/Banzamel/lol-helper/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A Windows desktop assistant for **League of Legends** (Summoner's Rift, 5v5 draft). It connects to the
@@ -12,7 +12,7 @@ UI languages: **Polish** (default) and **English**.
 
 ## Download
 
-Get the installer from **[Releases](https://github.com/Banzamel/LoLHelper/releases/latest)**
+Get the installer from **[Releases](https://github.com/Banzamel/lol-helper/releases/latest)**
 (`LoLHelper-Setup-<version>.exe`). The installer lets you pick the folder; by default it installs next
 to the game (`T:\Riot Games\LoL Helper` when that Riot Games folder exists, else `C:\Riot Games\LoL Helper`).
 The app keeps everything — settings, history, the downloaded database, its browser cache — in the `data`

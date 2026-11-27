@@ -6,13 +6,13 @@
   "type": "module",
   "author": "Rafał Polak (Banzamel)",
   "license": "MIT",
-  "homepage": "https://github.com/Banzamel/LoLHelper#readme",
+  "homepage": "https://github.com/Banzamel/lol-helper#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Banzamel/LoLHelper.git"
+    "url": "https://github.com/Banzamel/lol-helper.git"
   },
   "bugs": {
-    "url": "https://github.com/Banzamel/LoLHelper/issues"
+    "url": "https://github.com/Banzamel/lol-helper/issues"
   },
   "keywords": [
     "league-of-legends",

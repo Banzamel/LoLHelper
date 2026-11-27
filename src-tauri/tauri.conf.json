@@ -57,7 +57,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDU2NzIwOTEyNDUzNzJGOTQKUldTVUx6ZEZFZ2x5Vm04VlJJUm16YnJKTWNmbXdXeFVvOVJvNVEzOGdFZEtCL3ozdWRaVENjajAK",
       "endpoints": [
-        "https://github.com/Banzamel/LoLHelper/releases/latest/download/latest.json"
+        "https://github.com/Banzamel/lol-helper/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"

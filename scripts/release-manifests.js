@@ -11,7 +11,7 @@ const root = path.resolve(import.meta.dirname, '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const version = pkg.version;
 const bundle = process.argv[2] || path.join(root, 'src-tauri', 'target', 'x86_64-pc-windows-msvc', 'release', 'bundle', 'nsis');
-const repo = 'https://github.com/Banzamel/LoLHelper';
+const repo = 'https://github.com/Banzamel/lol-helper';
 const setupName = `LoLHelper-Setup-${version}.exe`;
 const out = path.join(root, 'release');
 

@@ -19,7 +19,7 @@ function stamp() {
   const date = new Date().toLocaleDateString('sv-SE'); // local YYYY-MM-DD
   let next = log.replace(m[0], `## [Unreleased]\n\n## [${pkg.version}] - ${date}\n\n${m[1].trim()}\n`);
   // Keep the comparison links at the bottom in sync.
-  const repo = 'https://github.com/Banzamel/LoLHelper';
+  const repo = 'https://github.com/Banzamel/lol-helper';
   next = next.replace(/^\[Unreleased\]: .*$/m, `[Unreleased]: ${repo}/compare/v${pkg.version}...HEAD`);
   const prev = (log.match(/^## \[(\d+\.\d+\.\d+[^\]]*)\]/m) || [])[1];
   const link = prev ? `${repo}/compare/v${prev}...v${pkg.version}` : `${repo}/releases/tag/v${pkg.version}`;
