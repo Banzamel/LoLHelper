@@ -14,7 +14,8 @@ const runeNames = (tree: string) => db.runes.trees.find((t) => t.nameEn === tree
 test('every entry is a champion with a valid max order', () => {
   for (const [id, k] of Object.entries(CHAMPIONS)) {
     assert.ok(db.byId[id], id);
-    if (k.max) assert.deepStrictEqual([...k.max].sort().join(''), 'EQW', id);
+    const orders = typeof k.max === 'object' ? Object.values(k.max) : k.max ? [k.max] : [];
+    for (const max of orders) assert.deepStrictEqual([...(max as string)].sort().join(''), 'EQW', id);
   }
 });
 
@@ -42,4 +43,7 @@ test('builds follow the champion where its class would build it wrongly', () => 
   assert.ok(!names(zyra).some((n) => ['Sunfire Aegis', 'Warmog\'s Armor', 'Unending Despair'].includes(n)), names(zyra).join());
   assert.strictEqual(keystone(recommendBuild(db, { championId: 'Jhin', role: 'BOTTOM' })), 'Fleet Footwork');
   assert.deepStrictEqual(recommendBuild(db, { championId: 'Viktor', role: 'MIDDLE' }).skills.max, ['Q', 'E', 'W']);
+  // The max order can depend on the role: AD Shaco in the jungle, AP Shaco in support.
+  assert.deepStrictEqual(recommendBuild(db, { championId: 'Shaco', role: 'JUNGLE' }).skills.max, ['E', 'Q', 'W']);
+  assert.deepStrictEqual(recommendBuild(db, { championId: 'Shaco', role: 'SUPPORT' }).skills.max, ['W', 'E', 'Q']);
 });

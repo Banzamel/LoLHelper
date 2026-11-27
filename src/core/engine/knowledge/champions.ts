@@ -12,8 +12,8 @@ export type Keystone = 'Conqueror' | 'Lethal Tempo' | 'Fleet Footwork' | 'Press 
 type ByRole<T> = T | Partial<Record<'ANY' | 'TOP' | 'JUNGLE' | 'MIDDLE' | 'BOTTOM' | 'SUPPORT', T>>;
 
 export interface ChampKnowledge {
-  // Basic abilities in the order they are maxed ("QEW").
-  max?: string;
+  // Basic abilities in the order they are maxed ("QEW"), per role where it differs (AP Shaco support).
+  max?: ByRole<string>;
   ks?: ByRole<Keystone>;
   cls?: ByRole<BuildClass>;
   style?: ByRole<ItemStyle>;
@@ -80,7 +80,7 @@ export const CHAMPIONS: Record<string, ChampKnowledge> = {
   Jinx: { max: 'QWE', ks: LT },
   Kaisa: { max: 'QEW', ks: LT, cls: 'marksman', style: 'ap-attacker' },
   Kalista: { max: 'EQW', ks: LT },
-  Karma: { max: 'QEW', ks: { ANY: AERY, MIDDLE: AC, TOP: AC } },
+  Karma: { max: { ANY: 'QEW', SUPPORT: 'EQW' }, ks: { ANY: AERY, MIDDLE: AC, TOP: AC } },
   Karthus: { max: 'QEW', ks: DH },
   Kassadin: { max: 'QEW' },
   Katarina: { max: 'QEW', ks: E },
@@ -109,7 +109,7 @@ export const CHAMPIONS: Record<string, ChampKnowledge> = {
   MissFortune: { max: 'QEW', ks: PTA },
   MonkeyKing: { max: 'QEW', ks: C },
   Mordekaiser: { max: 'QEW', ks: C },
-  Morgana: { max: 'QWE', ks: { ANY: AERY, MIDDLE: DH, JUNGLE: DH }, cls: 'mage-burst' },
+  Morgana: { max: { ANY: 'QWE', MIDDLE: 'WQE', JUNGLE: 'WQE' }, ks: { ANY: AERY, MIDDLE: DH, JUNGLE: DH }, cls: 'mage-burst' },
   Naafiri: { max: 'QEW', ks: E },
   Nami: { max: 'WEQ', ks: AERY },
   Nasus: { max: 'QEW' },
@@ -142,7 +142,7 @@ export const CHAMPIONS: Record<string, ChampKnowledge> = {
   Senna: { max: 'QWE', ks: FF },
   Seraphine: { max: 'QEW', ks: { ANY: AC, SUPPORT: AERY } },
   Sett: { max: 'QWE' },
-  Shaco: { max: 'EQW' },
+  Shaco: { max: { ANY: 'EQW', SUPPORT: 'WEQ' } },
   Shen: { max: 'QEW', ks: GRASP },
   Singed: { max: 'QEW' },
   Sion: { max: 'QEW' },
@@ -203,4 +203,4 @@ function forRole<T>(value: ByRole<T> | undefined, role: string | null): T | null
 export const knownClass = (id: string, role: string | null) => forRole(CHAMPIONS[id]?.cls, role);
 export const knownStyle = (id: string, role: string | null) => forRole(CHAMPIONS[id]?.style, role);
 export const knownKeystone = (id: string, role: string | null) => forRole(CHAMPIONS[id]?.ks, role);
-export const knownMaxOrder = (id: string) => CHAMPIONS[id]?.max || null;
+export const knownMaxOrder = (id: string, role: string | null = null) => forRole(CHAMPIONS[id]?.max, role);

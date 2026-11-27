@@ -29,10 +29,10 @@ function abilityPriority(spell: ChampionSpell, cls: BuildClass): number {
   return score;
 }
 
-export function skillOrder(champ: Champion, cls: BuildClass): SkillOrder {
+export function skillOrder(champ: Champion, cls: BuildClass, role: string | null = null): SkillOrder {
   const basics = champ.spells.slice(0, 3);
   const r = champ.spells[3];
-  const fixed = knownMaxOrder(champ.id);
+  const fixed = knownMaxOrder(champ.id, role);
   const order = fixed ? fixed.split('') : basics.map((s, i) => ({ key: s.key, score: abilityPriority(s, cls) - i * 0.01 }))
     .sort((a, b) => b.score - a.score).map((x) => x.key);
   const standard = r && r.maxrank === 3 && basics.every((s) => s.maxrank === 5);

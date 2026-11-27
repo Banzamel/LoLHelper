@@ -21,6 +21,6 @@ export function recommendLoadout(db: Db, { champ, cls, role, laner, threats }: L
   return {
     runes: runes && { ...runes, reasons },
     spells: { ids: spells.spells.map((k) => (byKey[k] ? byKey[k].id : null)).filter((id): id is number => id !== null), reason: spells.reason },
-    skills: skillOrder(champ, cls),
+    skills: skillOrder(champ, cls, role),
   };
 }

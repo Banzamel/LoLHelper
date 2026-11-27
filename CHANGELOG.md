@@ -7,6 +7,10 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Changed
+- The ability max order can depend on the role: Shaco maxes E in the jungle and W (boxes) in support, Morgana
+  maxes W in the mid lane and the jungle, Karma maxes E in support.
+
 ## [0.15.3] - 2026-11-27
 
 ### Fixed
