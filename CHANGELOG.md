@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.15.2] - 2026-11-27
+
 ### Fixed
 - The next skill in the widget and the Match view counted from level 2: the game starts at level 1 with a skill
   point, so the first skill is now shown for level 1. The order also follows what you really levelled (Q then E
@@ -344,7 +346,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.15.1...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.15.2...HEAD
+[0.15.2]: https://github.com/Banzamel/LoLHelper/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/Banzamel/LoLHelper/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/Banzamel/LoLHelper/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/Banzamel/LoLHelper/compare/v0.13.1...v0.14.0
