@@ -10,7 +10,7 @@ const KEYS = ['Q', 'W', 'E', 'R'];
 export function SkillCard({ build, game }: { build: Build; game: PlayingGame }) {
   const t = useT();
   const data = useGameData();
-  const next = nextSkill(build, game.me.level);
+  const next = nextSkill(build, game);
   const c = data.champ(game.me.championId);
   const levels = game.me.abilities || {};
   const pending = game.me.level - KEYS.reduce((s, k) => s + (levels[k] || 0), 0);

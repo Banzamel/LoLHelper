@@ -14,7 +14,7 @@ test('champions get the build class of their kit', () => {
 });
 
 test('a support mage in a solo lane builds as a mage, in support as a support', () => {
-  const cases: [string, string, string][] = [['Neeko', 'TOP', 'mage-burst'], ['Neeko', 'MIDDLE', 'mage-burst'], ['Neeko', 'SUPPORT', 'support-tank'],
+  const cases: [string, string, string][] = [['Neeko', 'TOP', 'mage-burst'], ['Neeko', 'MIDDLE', 'mage-burst'], ['Neeko', 'SUPPORT', 'mage-burst'], ['Leona', 'SUPPORT', 'support-tank'],
     ['Seraphine', 'BOTTOM', 'mage-burst'], ['Karma', 'MIDDLE', 'mage-burst'], ['Rakan', 'MIDDLE', 'support-tank']];
   assert.deepStrictEqual(cases.map(([id, role]) => classOf(db.byId[id], role)), cases.map(([, , cls]) => cls));
 });

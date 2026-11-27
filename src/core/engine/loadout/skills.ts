@@ -1,14 +1,7 @@
 // Summoner spells by role and ability max order by class.
 import type { Champion, ChampionSpell } from '../../data/types.ts';
+import { knownMaxOrder } from '../knowledge/champions.ts';
 import type { BuildClass, SkillOrder, Threats } from '../types.ts';
-
-// Well-known ability max orders; everything else uses the level-tip heuristic below.
-const MAX_ORDER: Record<string, string> = {
-  Jinx: 'QWE', Ezreal: 'QEW', Caitlyn: 'QWE', Kaisa: 'QEW', Vayne: 'QWE', Lucian: 'QEW', Ashe: 'WQE', MissFortune: 'QEW',
-  Draven: 'QWE', KogMaw: 'WQE', Tristana: 'EQW', Jhin: 'QWE', Yasuo: 'QEW', Yone: 'QWE', Riven: 'QEW', Irelia: 'QEW',
-  Darius: 'QEW', Garen: 'EQW', Ahri: 'QWE', Zed: 'QEW', Lux: 'EQW', Syndra: 'QWE', Annie: 'QWE', Lulu: 'EQW',
-  Janna: 'EWQ', Soraka: 'WQE', Nami: 'WEQ', Sona: 'QWE', Yuumi: 'EQW',
-};
 
 // [Flash's partner spell key, loadout.* reason]
 function secondSpell(cls: BuildClass, role: string | null, laner: Champion | null, t: Threats): [string, string] {
@@ -39,7 +32,7 @@ function abilityPriority(spell: ChampionSpell, cls: BuildClass): number {
 export function skillOrder(champ: Champion, cls: BuildClass): SkillOrder {
   const basics = champ.spells.slice(0, 3);
   const r = champ.spells[3];
-  const fixed = MAX_ORDER[champ.id];
+  const fixed = knownMaxOrder(champ.id);
   const order = fixed ? fixed.split('') : basics.map((s, i) => ({ key: s.key, score: abilityPriority(s, cls) - i * 0.01 }))
     .sort((a, b) => b.score - a.score).map((x) => x.key);
   const standard = r && r.maxrank === 3 && basics.every((s) => s.maxrank === 5);

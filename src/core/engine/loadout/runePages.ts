@@ -1,6 +1,6 @@
 // Rune presets resolved against the Data Dragon rune trees: a renamed or removed rune falls
 // back to the first one in its row.
-import type { Db, Rune, RuneTree } from '../../data/types.ts';
+import type { Champion, Db, Rune, RuneTree } from '../../data/types.ts';
 import type { BuildClass, RunePage } from '../types.ts';
 import { rolePreset, type RunePreset } from './presets.ts';
 
@@ -22,9 +22,9 @@ export function resolveRunes(db: Db, p: RunePreset): RunePage | null {
 }
 
 // The keystone id a champion of this class typically plays in the role (the preset without
-// matchup tweaks), resolved like the full page; null without rune data.
-export function typicalKeystone(db: Db, cls: BuildClass, role: string | null): number | null {
-  const { tree: treeName, keystone } = rolePreset(cls, role);
+// matchup tweaks, the champion's own keystone when known), resolved like the full page; null without rune data.
+export function typicalKeystone(db: Db, cls: BuildClass, role: string | null, champ: Champion | null = null): number | null {
+  const { tree: treeName, keystone } = rolePreset(cls, role, champ);
   const trees = db.runes.trees;
   const tree = trees.find((x) => x.nameEn === treeName) || trees[0];
   if (!tree) return null;

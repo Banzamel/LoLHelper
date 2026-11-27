@@ -7,6 +7,18 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Fixed
+- The next skill in the widget and the Match view counted from level 2: the game starts at level 1 with a skill
+  point, so the first skill is now shown for level 1. The order also follows what you really levelled (Q then E
+  instead of Q then W still suggests W next).
+- Every champion was checked in every role it is played: champions the class rules built wrongly now have their
+  own keystone, ability max order and, where needed, class and item style. Examples: Jhin, Caitlyn, Senna and
+  Smolder take Fleet Footwork, Lucian and Miss Fortune Press the Attack, Ezreal Conqueror, Yasuo and Yone Lethal
+  Tempo, Viktor and Twisted Fate First Strike, Anivia, Malzahar and Orianna Arcane Comet, Karthus Dark Harvest;
+  Fizz builds as an AP assassin, Jayce and Quinn build lethality, Kayle builds AP with attack speed, Zyra,
+  Morgana, Brand and Neeko support build as mages and Bard, Ivern and Zilean as enchanters instead of tanks.
+- Akali gets Sorcerer's Shoes and Ezreal Ionian Boots of Lucidity instead of the boots of their class.
+
 ## [0.15.1] - 2026-11-27
 
 ### Fixed

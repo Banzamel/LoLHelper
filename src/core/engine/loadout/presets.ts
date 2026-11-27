@@ -1,7 +1,9 @@
 // Rune presets per build class, written with English rune names and resolved against the
 // current Data Dragon rune trees (runePages.ts), then tuned for the matchup.
 import type { Champion } from '../../data/types.ts';
+import { knownKeystone } from '../knowledge/champions.ts';
 import type { BuildClass, Threats } from '../types.ts';
+import { keystonePage } from './keystonePages.ts';
 
 export interface RunePreset {
   tree: string;
@@ -25,21 +27,27 @@ const PRESETS: Record<BuildClass, RunePreset> = {
   'support-tank': { tree: 'Resolve', keystone: 'Aftershock', rows: ['Font of Life', 'Bone Plating', 'Unflinching'], sub: 'Inspiration', subRunes: ['Biscuit Delivery', 'Cosmic Insight'], shards: [5007, 5010, 5011] },
 };
 
-// The class preset adjusted for the role only (no matchup), as a fresh copy.
-export function rolePreset(cls: BuildClass, role: string | null): RunePreset {
+// The class preset adjusted for the role only (no matchup), as a fresh copy. A champion with a
+// keystone of its own (knowledge/champions.ts) gets the page built around it, with the class shards.
+export function rolePreset(cls: BuildClass, role: string | null, champ: Champion | null = null): RunePreset {
   const preset = PRESETS[cls];
   const p = { ...preset, rows: [...preset.rows], subRunes: [...preset.subRunes], shards: [...preset.shards] };
   if (role === 'JUNGLE' && cls === 'tank') Object.assign(p, { keystone: 'Aftershock', rows: ['Font of Life', 'Bone Plating', 'Unflinching'] });
+  const own = champ ? knownKeystone(champ.id, role) : null;
+  if (champ && own && own !== p.keystone) {
+    const ap = champ.damageType === 'AP' || ['mage-burst', 'mage-battle', 'mage-artillery', 'ap-bruiser', 'enchanter'].includes(cls);
+    Object.assign(p, keystonePage(own, { cls, ap, melee: champ.attackType === 'MELEE' }));
+  }
   return p;
 }
 
 // The preset tuned for the lane opponent and the enemy threats; reasons are loadout.* keys.
-export function tune(cls: BuildClass, role: string | null, laner: Champion | null, t: Threats): { p: RunePreset; reasons: string[] } {
-  const p = rolePreset(cls, role);
+export function tune(cls: BuildClass, role: string | null, laner: Champion | null, t: Threats, champ: Champion | null = null): { p: RunePreset; reasons: string[] } {
+  const p = rolePreset(cls, role, champ);
   const reasons: string[] = [];
   const melee = ['bruiser', 'ap-bruiser', 'tank', 'assassin-ad'].includes(cls);
-  if (cls === 'marksman' && t.tanks >= 0.35) { p.rows[2] = 'Cut Down'; reasons.push('loadout.cutDown'); }
-  if (cls === 'marksman' && laner && laner.attackType === 'MELEE' && laner.archetypes.some((a) => ['ASSASSIN', 'DIVER'].includes(a))) {
+  if (cls === 'marksman' && p.tree === 'Precision' && t.tanks >= 0.35) { p.rows[2] = 'Cut Down'; reasons.push('loadout.cutDown'); }
+  if (cls === 'marksman' && p.keystone === 'Lethal Tempo' && laner && laner.attackType === 'MELEE' && laner.archetypes.some((a) => ['ASSASSIN', 'DIVER'].includes(a))) {
     p.keystone = 'Fleet Footwork'; reasons.push('loadout.fleet');
   }
   if (laner && laner.attackType === 'RANGED' && melee && role !== null && ['TOP', 'MIDDLE'].includes(role)) {

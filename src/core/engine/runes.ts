@@ -36,7 +36,7 @@ export function keystoneTip(db: Db, id: number | null): KeystoneTip | null {
 export function predictKeystone(db: Db, champion: Champion | null | undefined, role: string | null = null): number | null {
   if (!champion) return null;
   const position = role || champion.positions[0];
-  return typicalKeystone(db, classOf(champion, position), position);
+  return typicalKeystone(db, classOf(champion, position), position, champion);
 }
 
 // Each known enemy with its keystone: the real one when it is a keystone of the database,

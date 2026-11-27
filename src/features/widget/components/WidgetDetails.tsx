@@ -13,7 +13,7 @@ export function WidgetDetails({ game, model }: { game: PlayingGame; model: GameB
   const owned = new Set(model.owned);
   const next = build.next;
   const buy = !needsStarters(data, game) && next && next.buy && next.buy.id !== next.id ? data.item(next.buy.id) : null;
-  const skill = nextSkill(build, game.me.level);
+  const skill = nextSkill(build, game);
   const champ = data.champ(game.me.championId);
   const spell = skill && champ ? (skill.key === 'R' ? champ.spells[3] : champ.spells.find((s) => s.key === skill.key)) : null;
   return (

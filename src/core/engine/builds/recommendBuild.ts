@@ -10,7 +10,7 @@ import { itemLessons } from '../history/learning.ts';
 import { applyEnemyItems, threatWeights } from '../live/enemyItems.ts';
 import { enemyDefence } from '../live/enemyProfile.ts';
 import { nextPurchase, purchaseOrder } from '../live/purchases.ts';
-import type { Build, BuildRequest, ItemStyle, Threats } from '../types.ts';
+import type { Build, BuildClass, BuildRequest, ItemStyle, Threats } from '../types.ts';
 import { classOf } from './classOf.ts';
 import { effectScore } from './itemEffects.ts';
 import { itemStyle } from './itemStyle.ts';
@@ -83,6 +83,13 @@ function threatsOf(db: Db, req: BuildRequest, laner: Champion | null, weights: R
   return { ...t, defence: enemyDefence(db, req), allyGrievous: allies.some((id) => !!db.itemById[id]?.features.flags.grievous) };
 }
 
+// Boots follow the item style where it changes what the champion needs: Akali (an assassin who
+// builds AP) wants Sorcerer's Shoes, Ezreal (a marksman casting spells) wants haste.
+function bootsClass(cls: BuildClass, style: ItemStyle): BuildClass {
+  if (style === 'caster-ad') return 'assassin-ad';
+  return ['onhit', 'crit-fighter', 'ap-attacker', 'caster-ad'].includes(style) ? cls : style as BuildClass;
+}
+
 export function recommendBuild(db: Db, req: BuildRequest): Build {
   const champ = db.byId[req.championId];
   if (!champ) throw new Error(`Unknown champion ${req.championId}`);
@@ -95,7 +102,7 @@ export function recommendBuild(db: Db, req: BuildRequest): Build {
   const owned = new Set((req.ownedItems || []).filter((id) => db.itemById[id] && db.itemById[id].category === 'legendary'));
 
   // Items follow the champion's own style where its kit differs from the class.
-  const style = itemStyle(champ, cls);
+  const style = itemStyle(champ, cls, role);
   const scored = scoreItems(db, champ, style, t, req);
   const byItem = new Map(scored.map((s) => [s.item, s]));
   // Items already bought in game stay in the build (first) and are never replaced. In a
@@ -118,7 +125,7 @@ export function recommendBuild(db: Db, req: BuildRequest): Build {
   const build: Build = {
     championId: champ.id, enemyId, role, cls, style, threats: threatLines(t, weights),
     starters: pickStarters(db, cls, role, laner),
-    boots: pickBoots(db, cls, t, (WEIGHTS[style].as || 0) >= 0.8),
+    boots: pickBoots(db, bootsClass(cls, style), t, (WEIGHTS[style].as || 0) >= 0.8),
     core: core.map((item) => ({ id: item.id, stats: byItem.get(item)?.top || [], owned: owned.has(item.id), reasons: reasonsOf(item) })),
     situational: situ.map((s) => ({ id: s.item.id, reasons: reasonsOf(s.item) })),
     full: full.map((i) => i.id),

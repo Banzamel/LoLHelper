@@ -1,11 +1,14 @@
 // The build class of a champion in a role: decides stat weights, starters, boots and runes.
 import type { Champion } from '../../data/types.ts';
 import { hasArchetype as has } from '../archetypes.ts';
+import { knownClass } from '../knowledge/champions.ts';
 import type { BuildClass } from '../types.ts';
 
 const SOLO_LANES = ['TOP', 'MIDDLE', 'BOTTOM'];
 
 export function classOf(c: Champion, role: string | null): BuildClass {
+  const known = knownClass(c.id, role);
+  if (known) return known;
   const ap = c.damageType === 'AP';
   // A support mage played in a solo lane (Neeko or Zyra top/mid, Seraphine bot, Karma mid) builds
   // damage like a mage, not the support's utility or tank items.

@@ -4,12 +4,15 @@
 // are marksmen who build on-hit instead of crit, Kai'Sa and Teemo are mages who attack.
 import type { Champion } from '../../data/types.ts';
 import { hasArchetype as has } from '../archetypes.ts';
+import { knownStyle } from '../knowledge/champions.ts';
 import type { BuildClass, ItemStyle } from '../types.ts';
 
 const PHYSICAL_FIGHTERS: BuildClass[] = ['assassin-ad', 'bruiser'];
 const MAGES: BuildClass[] = ['mage-burst', 'mage-battle', 'mage-artillery'];
 
-export function itemStyle(c: Champion, cls: BuildClass): ItemStyle {
+export function itemStyle(c: Champion, cls: BuildClass, role: string | null = null): ItemStyle {
+  const known = knownStyle(c.id, role);
+  if (known) return known;
   const s = c.scaling;
   if (!s) return cls;
   if (cls === 'marksman') {

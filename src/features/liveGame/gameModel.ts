@@ -2,6 +2,7 @@
 // build adapted to the live match.
 import type { Role } from '../../core/data/types.ts';
 import { isFinishedBoots } from '../../core/engine/live/purchases.ts';
+import { nextSkill as nextSkillOf } from '../../core/engine/live/nextSkill.ts';
 import type { Build } from '../../core/engine/types.ts';
 import type { LivePlayer, PlayingGame } from '../../core/live/types.ts';
 import type { BuildService } from '../builds/index.ts';
@@ -58,12 +59,8 @@ export async function buildForGame(builds: BuildService, data: GameData, game: P
   return { role, opp, owned, build, fullIds };
 }
 
-// The ability the skill order says to level next (null at level 18 or for non-standard kits).
-export function nextSkill(build: Build, level: number): { key: string; level: number } | null {
-  const levels = build.skills && build.skills.levels;
-  if (!levels || level >= 18) return null;
-  return { key: levels[level], level: level + 1 };
-}
+// The ability to level next, from the points the player really spent (one at level 1).
+export const nextSkill = (build: Build, game: PlayingGame) => nextSkillOf(build, game.me.level, game.me.abilities || null);
 
 // What the build depends on besides the player's own items, level and gold: the enemies'
 // items, levels, scores and positions and the allies' items.

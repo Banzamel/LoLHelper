@@ -14,7 +14,7 @@ export interface LoadoutRequest {
 }
 
 export function recommendLoadout(db: Db, { champ, cls, role, laner, threats }: LoadoutRequest): Loadout {
-  const { p, reasons } = tune(cls, role, laner, threats);
+  const { p, reasons } = tune(cls, role, laner, threats, champ);
   const runes = db.runes.trees.length ? resolveRunes(db, p) : null;
   const spells = pickSpells(cls, role, laner, threats);
   const byKey = Object.fromEntries(db.summoners.map((s) => [s.key, s]));
