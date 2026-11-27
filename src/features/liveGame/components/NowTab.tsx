@@ -25,7 +25,7 @@ export function NowTab({ game, data: model, onOpponent }: { game: PlayingGame; d
           <NextItemCard build={build} gold={game.me.gold} starting={needsStarters(data, game)} />
           <div className="card">
             <div className="card-kicker">{t('live.recommended')}</div>
-            <BuildOrder ids={fullIds} owned={game.me.items} />
+            <BuildOrder ids={fullIds} owned={model.owned} />
             {build.threats.length ? <div className="chips live-threats">{build.threats.map((x, i) => <span key={i} className="chip minus">{t(x.key, x.params)}</span>)}</div> : null}
           </div>
         </div>

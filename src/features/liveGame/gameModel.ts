@@ -37,6 +37,14 @@ export function laneOpponent(data: GameData, game: PlayingGame, role: Role): Liv
   return game.enemies.find((e) => data.champ(e.championId)?.positions.includes(role)) || null;
 }
 
+// Finished boots the game does not list: their id when known, else the recommended pair.
+function hiddenFinished(data: GameData, game: PlayingGame, build: Build): number | undefined {
+  const hidden = game.me.hiddenBoots;
+  if (!hidden || !hidden.finished) return undefined;
+  if (hidden.id !== null && isFinishedBoots(data.db, hidden.id)) return hidden.id;
+  return build.boots ? build.boots.id : undefined;
+}
+
 export async function buildForGame(builds: BuildService, data: GameData, game: PlayingGame): Promise<GameBuild> {
   const role = myRole(data, game);
   const opp = laneOpponent(data, game, role);
@@ -52,11 +60,13 @@ export async function buildForGame(builds: BuildService, data: GameData, game: P
     enemyLevels: Object.fromEntries(game.enemies.map((e) => [key(e), e.level])),
     allyItems: Object.fromEntries(game.allies.filter((a) => a.name !== game.me.name).map((a) => [key(a), bought(data, a.items)])),
     ownedItems: game.me.items,
+    hiddenBoots: game.me.hiddenBoots || null,
     gold: game.me.gold,
   });
-  const ownedBoots = owned.find((id) => isFinishedBoots(data.db, id));
+  const ownedBoots = owned.find((id) => isFinishedBoots(data.db, id)) ?? hiddenFinished(data, game, build);
   const fullIds = build.order.map((id) => (build.boots && id === build.boots.id && ownedBoots ? ownedBoots : id));
-  return { role, opp, owned, build, fullIds };
+  // Boots in the slot the game does not report count as owned too (shown ticked).
+  return { role, opp, owned: ownedBoots && !owned.includes(ownedBoots) ? [...owned, ownedBoots] : owned, build, fullIds };
 }
 
 // The ability to level next, from the points the player really spent (one at level 1).

@@ -123,6 +123,8 @@ export interface BuildRequest {
   // What each ally (the player excluded) bought, by champion id.
   allyItems?: Record<string, number[]> | null;
   ownedItems?: number[] | null;
+  // Boots in a slot the game does not report (live/BootsTracker.ts).
+  hiddenBoots?: { id: number | null; finished: boolean } | null;
   gold?: number | null;
   history?: LearningEntry[] | null;
 }

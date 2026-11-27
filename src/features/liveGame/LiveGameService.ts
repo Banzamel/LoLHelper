@@ -3,6 +3,7 @@
 import * as demo from '../../core/demo/index.ts';
 import { MatchRecorder } from '../../core/history/MatchRecorder.ts';
 import type { RosterEntry } from '../../core/lcu/types.ts';
+import { BootsTracker } from '../../core/live/BootsTracker.ts';
 import { LiveTracker } from '../../core/live/LiveTracker.ts';
 import { normalize } from '../../core/live/normalize.ts';
 import type { LiveGame } from '../../core/live/types.ts';
@@ -22,6 +23,7 @@ export class LiveGameService {
   readonly store = new Store<{ game: LiveGame | null; demo: boolean }>({ game: null, demo: false });
   private timer: ReturnType<typeof setInterval> | undefined;
   private readonly tracker = new LiveTracker();
+  private readonly boots = new BootsTracker();
   private readonly recorder = new MatchRecorder();
   private demoStartedAt: number | null = null;
 
@@ -59,6 +61,7 @@ export class LiveGameService {
     clearInterval(this.timer);
     this.timer = undefined;
     this.tracker.reset();
+    this.boots.reset();
     this.setGame(null);
   }
 
@@ -77,7 +80,7 @@ export class LiveGameService {
     if (!db) return;
     try {
       const data = await this.snapshot();
-      if (data && data.activePlayer && data.allPlayers) this.setGame(this.tracker.track(normalize(data, db.db, this.roster())));
+      if (data && data.activePlayer && data.allPlayers) this.setGame(this.boots.track(this.tracker.track(normalize(data, db.db, this.roster())), db.db));
     } catch { /* game still loading or already closed */ }
   }
 

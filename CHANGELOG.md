@@ -7,6 +7,13 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Fixed
+- Boots in the extra slot are no longer suggested again. Since the 2026 role quests boots can sit in a seventh
+  slot (the bot lane quest moves them there, Magical Footwear grants them there) that the game does not report
+  to apps. The app now remembers boots it saw earlier in the match, counts the Magical Footwear boots once the
+  rune grants them, and treats a purchase that changed no visible item as an upgrade of those boots. Boots in
+  that slot take none of the six inventory slots.
+
 ## [0.15.5] - 2026-11-27
 
 ### Changed

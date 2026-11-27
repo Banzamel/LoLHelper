@@ -37,8 +37,13 @@ export interface LiveRunePage {
   selectedPerkIds: number[];
 }
 
+// Boots the game does not list (BootsTracker.ts): their id when known, and whether they are
+// finished (upgraded past plain Boots).
+export interface HiddenBoots { id: number | null; finished: boolean }
+
 export interface Me extends LivePlayer {
   gold: number;
+  hiddenBoots?: HiddenBoots;
   runes: LiveRunePage | null;
   stats: Record<string, number>;
   abilities: Record<string, number>;

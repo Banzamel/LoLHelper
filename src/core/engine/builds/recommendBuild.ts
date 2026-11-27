@@ -134,7 +134,7 @@ export function recommendBuild(db: Db, req: BuildRequest): Build {
   };
   build.order = purchaseOrder(build);
   if (req.ownedItems) {
-    build.next = nextPurchase(db, build, req.ownedItems, req.gold ?? null);
+    build.next = nextPurchase(db, build, req.ownedItems, req.gold ?? null, req.hiddenBoots || null);
     const next = build.next && db.itemById[build.next.id];
     if (build.next && next) build.next.reasons = build.boots && next.id === build.boots.id ? [{ key: build.boots.reason }] : reasonsOf(next);
   }

@@ -77,16 +77,21 @@ function buyNow(node: PlanNode, gold: number): PlanNode | null {
 
 // Next purchase: the first item of the buy order not owned yet, the part to buy for it now
 // and its direct parts (owned or not). An item that would not fit the inventory (six slots
-// full and none of its parts owned, boots as a seventh item) is skipped.
-export function nextPurchase(db: Db, build: Pick<Build, 'full' | 'boots'>, owned: number[] | null, gold: number | null = null): NextPurchase | null {
+// full and none of its parts owned, boots as a seventh item) is skipped. Hidden boots (in a slot
+// the game does not report) take no inventory slot: finished ones end the boots, plain ones are
+// a part of the boots to buy.
+export function nextPurchase(db: Db, build: Pick<Build, 'full' | 'boots'>, owned: number[] | null, gold: number | null = null,
+  hidden: { id: number | null; finished: boolean } | null = null): NextPurchase | null {
   const have = new Set(owned || []);
-  const bootsDone = (owned || []).some((id) => isFinishedBoots(db, id));
+  const bootsDone = (owned || []).some((id) => isFinishedBoots(db, id)) || !!hidden?.finished;
   const taken = slotsTaken(db, owned);
   for (const id of purchaseOrder(build)) {
     if (have.has(id) || !db.itemById[id]) continue;
-    if (build.boots && id === build.boots.id && bootsDone) continue;
-    const plan = planItem(db, id, owned);
-    if (taken - ownedParts(plan) + 1 > INVENTORY_SLOTS) continue;
+    const isBoots = !!build.boots && id === build.boots.id;
+    if (isBoots && bootsDone) continue;
+    const hiddenPart = isBoots && hidden && hidden.id !== null ? [hidden.id] : [];
+    const plan = planItem(db, id, [...(owned || []), ...hiddenPart]);
+    if (!hiddenPart.length && taken - ownedParts(plan) + 1 > INVENTORY_SLOTS) continue;
     const buy = gold === null ? null : buyNow(plan, gold);
     return {
       id,
