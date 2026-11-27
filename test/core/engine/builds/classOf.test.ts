@@ -13,6 +13,12 @@ test('champions get the build class of their kit', () => {
   assert.deepStrictEqual(cases.map(([id, role]) => classOf(db.byId[id], role)), cases.map(([, , cls]) => cls));
 });
 
+test('a support mage in a solo lane builds as a mage, in support as a support', () => {
+  const cases: [string, string, string][] = [['Neeko', 'TOP', 'mage-burst'], ['Neeko', 'MIDDLE', 'mage-burst'], ['Neeko', 'SUPPORT', 'support-tank'],
+    ['Seraphine', 'BOTTOM', 'mage-burst'], ['Karma', 'MIDDLE', 'mage-burst'], ['Rakan', 'MIDDLE', 'support-tank']];
+  assert.deepStrictEqual(cases.map(([id, role]) => classOf(db.byId[id], role)), cases.map(([, , cls]) => cls));
+});
+
 test('an archetype check is false for a missing champion', () => {
   assert.strictEqual(hasArchetype(null, ['MARKSMAN']), false);
   assert.strictEqual(hasArchetype(db.byId.Jinx, ['MARKSMAN']), true);

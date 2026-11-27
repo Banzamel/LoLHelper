@@ -34,3 +34,17 @@ test('boots already bought are not recommended again, upgraded ones included', (
   // Gunmetal Greaves is not tagged as boots by Riot.
   for (const boots of ['Plated Steelcaps', 'Armored Advance', 'Gunmetal Greaves']) assert.strictEqual(have(boots), null, boots);
 });
+
+test('boots are not recommended as a seventh item, nor after boots the shop does not sell', () => {
+  const id = (n) => db.items.find((i) => i.nameEn === n).id;
+  const legendaries = db.items.filter((i) => i.category === 'legendary').slice(0, 6).map((i) => i.id);
+  const build = { full: legendaries.slice(0, 5), boots: { id: id("Sorcerer's Shoes"), upgrade: null, reason: '' } };
+  // Six finished items and a trinket: no room for boots.
+  assert.strictEqual(nextPurchase(db, build, [...legendaries, 3340]), null);
+  // Five items: the boots are next.
+  assert.strictEqual(nextPurchase(db, build, [...legendaries.slice(0, 5), 3340]).id, build.boots.id);
+  // Six items with Boots among them: upgrading them uses that slot.
+  assert.strictEqual(nextPurchase(db, build, [...legendaries.slice(0, 5), id('Boots')]).id, build.boots.id);
+  // Symbiotic Soles and Forever Forward are boots though the database lacks them.
+  for (const boots of [3010, 3176]) assert.strictEqual(nextPurchase(db, build, [...legendaries.slice(0, 5), boots]), null);
+});

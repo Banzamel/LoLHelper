@@ -5,10 +5,16 @@ import type { Build, NextPurchase } from '../types.ts';
 
 // Rune-granted Slightly Magical Boots count as plain Boots when planning purchases.
 const ALIASES: Record<number, number> = { 2422: 1001 };
+// Boots the shop does not sell, so the database lacks them: Symbiotic Soles and its upgrades
+// (Synchronized Souls, Forever Forward), Mobility Boots, Ghostcrawlers.
+const UNLISTED_BOOTS = new Set([3005, 3010, 3013, 3117, 3176]);
+const TRINKETS = new Set([3330, 3340, 3363, 3364, 3513]);
+const INVENTORY_SLOTS = 6;
 
 // Finished boots in the inventory, wherever they sit (the boots slot too). Riot does not tag every
 // upgrade as boots (Gunmetal Greaves), so anything built from a pair of boots counts as well.
 export function isFinishedBoots(db: Db, id: number): boolean {
+  if (UNLISTED_BOOTS.has(id)) return true;
   const it = db.itemById[id];
   if (!it) return false;
   return it.category === 'boots' || it.category === 'boots-upgrade' || it.from.some((f) => db.itemById[f]?.category === 'boots');
@@ -44,6 +50,17 @@ export function planItem(db: Db, id: number, owned: number[] | null): PlanNode {
   return walk(id, true);
 }
 
+// Inventory slots taken (the trinket slot and sellable consumables aside; items the database
+// does not know still take a slot).
+export function slotsTaken(db: Db, owned: number[] | null): number {
+  return (owned || []).filter((id) => {
+    const cat = db.itemById[id]?.category;
+    return !TRINKETS.has(id) && cat !== 'trinket' && cat !== 'consumable';
+  }).length;
+}
+
+const ownedParts = (node: PlanNode): number => node.children.reduce((s, c) => s + (c.owned ? 1 : ownedParts(c)), 0);
+
 // What to buy now towards `node`: the whole item when affordable, else the most expensive
 // missing part that fits in `gold` (null when even the cheapest part is too expensive).
 function buyNow(node: PlanNode, gold: number): PlanNode | null {
@@ -59,14 +76,17 @@ function buyNow(node: PlanNode, gold: number): PlanNode | null {
 }
 
 // Next purchase: the first item of the buy order not owned yet, the part to buy for it now
-// and its direct parts (owned or not).
+// and its direct parts (owned or not). An item that would not fit the inventory (six slots
+// full and none of its parts owned, boots as a seventh item) is skipped.
 export function nextPurchase(db: Db, build: Pick<Build, 'full' | 'boots'>, owned: number[] | null, gold: number | null = null): NextPurchase | null {
   const have = new Set(owned || []);
   const bootsDone = (owned || []).some((id) => isFinishedBoots(db, id));
+  const taken = slotsTaken(db, owned);
   for (const id of purchaseOrder(build)) {
     if (have.has(id) || !db.itemById[id]) continue;
     if (build.boots && id === build.boots.id && bootsDone) continue;
     const plan = planItem(db, id, owned);
+    if (taken - ownedParts(plan) + 1 > INVENTORY_SLOTS) continue;
     const buy = gold === null ? null : buyNow(plan, gold);
     return {
       id,

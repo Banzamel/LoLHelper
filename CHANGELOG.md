@@ -7,6 +7,13 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Fixed
+- The widget and the Match view no longer suggest boots when the inventory is already full (boots would be a
+  seventh item); any item that would not fit is skipped. Boots the shop does not sell (Symbiotic Soles, its
+  upgrades, Mobility Boots) count as owned boots.
+- Support mages played in a solo lane build as mages: Neeko or Zyra top/mid, Seraphine bot, Karma mid and similar
+  no longer get tank or enchanter items; in the support role they keep the support build.
+
 ## [0.15.0] - 2026-11-10
 
 ### Added
