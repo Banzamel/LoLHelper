@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.15.4] - 2026-11-27
+
 ### Changed
 - The ability max order can depend on the role: Shaco maxes E in the jungle and W (boxes) in support, Morgana
   maxes W in the mid lane and the jungle, Karma maxes E in support.
@@ -356,7 +358,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.15.3...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.15.4...HEAD
+[0.15.4]: https://github.com/Banzamel/LoLHelper/compare/v0.15.3...v0.15.4
 [0.15.3]: https://github.com/Banzamel/LoLHelper/compare/v0.15.2...v0.15.3
 [0.15.2]: https://github.com/Banzamel/LoLHelper/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/Banzamel/LoLHelper/compare/v0.15.0...v0.15.1
