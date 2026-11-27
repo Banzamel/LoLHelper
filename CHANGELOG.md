@@ -7,6 +7,10 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+### Changed
+- More champions max their abilities by role: Brand maxes E second in the jungle, Galio maxes W in support,
+  Varus maxes W in the bot lane (on-hit).
+
 ## [0.15.4] - 2026-11-27
 
 ### Changed
