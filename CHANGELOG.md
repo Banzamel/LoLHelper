@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-11-27
+
 ### Fixed
 - The widget and the Match view no longer suggest boots when the inventory is already full (boots would be a
   seventh item); any item that would not fit is skipped. Boots the shop does not sell (Symbiotic Soles, its
@@ -330,7 +332,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.15.1...HEAD
+[0.15.1]: https://github.com/Banzamel/LoLHelper/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/Banzamel/LoLHelper/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/Banzamel/LoLHelper/compare/v0.13.1...v0.14.0
 [0.13.1]: https://github.com/Banzamel/LoLHelper/compare/v0.13.0...v0.13.1
