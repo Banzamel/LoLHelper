@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.15.6] - 2026-11-27
+
 ### Fixed
 - Boots in the extra slot are no longer suggested again. Since the 2026 role quests boots can sit in a seventh
   slot (the bot lane quest moves them there, Magical Footwear grants them there) that the game does not report
@@ -371,7 +373,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.15.5...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.15.6...HEAD
+[0.15.6]: https://github.com/Banzamel/LoLHelper/compare/v0.15.5...v0.15.6
 [0.15.5]: https://github.com/Banzamel/LoLHelper/compare/v0.15.4...v0.15.5
 [0.15.4]: https://github.com/Banzamel/LoLHelper/compare/v0.15.3...v0.15.4
 [0.15.3]: https://github.com/Banzamel/LoLHelper/compare/v0.15.2...v0.15.3
