@@ -7,6 +7,8 @@ moves them into a numbered section automatically (see README → Versioning).
 
 ## [Unreleased]
 
+## [0.15.5] - 2026-11-27
+
 ### Changed
 - More champions max their abilities by role: Brand maxes E second in the jungle, Galio maxes W in support,
   Varus maxes W in the bot lane (on-hit).
@@ -362,7 +364,8 @@ First public release.
 - Versioning: SemVer, changelog automation, version/tag check and a GitHub Actions workflow that
   tests every push and builds and publishes the installer for `v*` tags.
 
-[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.15.4...HEAD
+[Unreleased]: https://github.com/Banzamel/LoLHelper/compare/v0.15.5...HEAD
+[0.15.5]: https://github.com/Banzamel/LoLHelper/compare/v0.15.4...v0.15.5
 [0.15.4]: https://github.com/Banzamel/LoLHelper/compare/v0.15.3...v0.15.4
 [0.15.3]: https://github.com/Banzamel/LoLHelper/compare/v0.15.2...v0.15.3
 [0.15.2]: https://github.com/Banzamel/LoLHelper/compare/v0.15.1...v0.15.2
